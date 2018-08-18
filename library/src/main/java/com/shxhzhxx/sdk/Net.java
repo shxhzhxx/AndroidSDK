@@ -15,6 +15,7 @@ import com.shxhzhxx.urlloader.MultiObserverTaskManager;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
@@ -26,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 
 import okhttp3.Call;
 import okhttp3.MediaType;
+import okhttp3.MultipartBody;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
@@ -76,15 +78,13 @@ public class Net extends MultiObserverTaskManager<Net.NetListener> {
     }
 
 
-
-
-
     private ConnectivityManager mConnMgr;
     private OkHttpClient mOkHttpClient;
     private SparseArray<String> mCodeMessage;
-    public String DEFAULT_ERROR_MESSAGE;
+    private String DEFAULT_ERROR_MESSAGE;
 
     public Net(Context context) {
+        super(3);
         mConnMgr = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
         mCodeMessage = new SparseArray<>();
         mOkHttpClient = new OkHttpClient.Builder()
@@ -126,8 +126,6 @@ public class Net extends MultiObserverTaskManager<Net.NetListener> {
             Log.e(key, "Net.postForm: invalid params");
             if (listener != null)
                 listener.onResult(Net.CODE_GET_PARAM_FAILED, getMsg(Net.CODE_GET_PARAM_FAILED), null);
-            else
-                throw new IllegalArgumentException("postFile: invalid params");
             return -1;
         }
         JSONObject requestJson;
@@ -139,6 +137,65 @@ public class Net extends MultiObserverTaskManager<Net.NetListener> {
         }
         RequestBody body = RequestBody.create(DATA_TYPE_FORM, formatJsonToFormData(requestJson));
         Request request = new Request.Builder().url(url).post(body).build();
+        return executeRequest(key, tag, request, listener);
+    }
+
+    public int postMultipartForm(String url, String key, @Nullable String tag, String fileKey, File file, NetListener listener) {
+        if (listener == null || file == null || !file.exists() || TextUtils.isEmpty(key) || TextUtils.isEmpty(url)) {
+            Log.e(key, "postMultipartForm: invalid params");
+            if (listener != null)
+                listener.onResult(Net.CODE_GET_PARAM_FAILED, getMsg(Net.CODE_GET_PARAM_FAILED), null);
+            return -1;
+        }
+        MultipartBody.Builder builder = new MultipartBody.Builder()
+                .setType(MultipartBody.FORM)
+                .addFormDataPart(fileKey, file.getName(), RequestBody.create(DATA_TYPE_FILE, file));
+        try {
+            JSONObject requestJson = listener.getParam();
+            Iterator<String> iterator = requestJson.keys();
+            while (iterator.hasNext()) {
+                String k = iterator.next();
+                String v = requestJson.getString(k);
+                builder.addFormDataPart(k, v);
+            }
+        } catch (JSONException ignore) {
+        }
+
+        Request request = new Request.Builder()
+                .url(url)
+                .post(builder.build()).build();
+        return executeRequest(key, tag, request, listener);
+    }
+
+    public int postFile(String url, String key, @Nullable String tag, File file, NetListener listener) {
+        if (listener == null || file == null || !file.exists() || TextUtils.isEmpty(key) || TextUtils.isEmpty(url)) {
+            Log.e(key, "postFile: invalid params");
+            if (listener != null)
+                listener.onResult(Net.CODE_GET_PARAM_FAILED, getMsg(Net.CODE_GET_PARAM_FAILED), null);
+            return -1;
+        }
+        Request request = new Request.Builder().url(url)
+                .post(RequestBody.create(DATA_TYPE_FILE, file))
+                .build();
+        return executeRequest(key, tag, request, listener);
+    }
+
+    public int postJson(String url, String key, @Nullable String tag, NetListener listener) {
+        if (listener == null || TextUtils.isEmpty(url) || TextUtils.isEmpty(key)) {
+            Log.e(key, "postJson: invalid params");
+            if (listener != null)
+                listener.onResult(Net.CODE_GET_PARAM_FAILED, getMsg(Net.CODE_GET_PARAM_FAILED), null);
+            return -1;
+        }
+        Request request;
+        try {
+            request = new Request.Builder().url(url)
+                    .post(RequestBody.create(DATA_TYPE_JSON, listener.getParam().toString()))
+                    .build();
+        } catch (JSONException e) {
+            listener.onResult(CODE_GET_PARAM_FAILED, mCodeMessage.get(CODE_GET_PARAM_FAILED), null);
+            return -1;
+        }
         return executeRequest(key, tag, request, listener);
     }
 
@@ -206,7 +263,7 @@ public class Net extends MultiObserverTaskManager<Net.NetListener> {
             try {
                 data = body.string();
             } catch (IOException e) {
-                Log.d(TAG, "string IOException: " + e.getMessage());
+                Log.e(TAG, "string IOException: " + e.getMessage());
                 body.close();
                 setPostResult(new Runnable() {
                     @Override
