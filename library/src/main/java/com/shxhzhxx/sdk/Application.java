@@ -9,6 +9,7 @@ public class Application extends android.app.Application {
     public void onCreate() {
         super.onCreate();
         ImageLoader.init(this);
+        Net.init(this);
     }
 
     @Override

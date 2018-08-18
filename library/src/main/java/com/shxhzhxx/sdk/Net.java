@@ -77,7 +77,7 @@ public class Net extends MultiObserverTaskManager<Net.NetListener> {
 
 
 
-    
+
 
     private ConnectivityManager mConnMgr;
     private OkHttpClient mOkHttpClient;
