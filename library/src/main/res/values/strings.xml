@@ -6,4 +6,6 @@
     <string name="err_msg_get_param_failed">创建请求参数失败</string>
     <string name="err_msg_unexpected_response">数据异常</string>
     <string name="err_msg_cancelled">请求已取消</string>
+
+    <string name="permission_denied">缺少下列权限：\n%s\n请到应用管理中心开启</string>
 </resources>

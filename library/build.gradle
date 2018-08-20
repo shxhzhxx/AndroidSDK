@@ -2,6 +2,10 @@ apply plugin: 'com.android.library'
 apply plugin: 'com.github.dcendents.android-maven'
 group='com.github.shxhzhxx'
 
+ext {
+    supportLibVersion = '27.1.1'
+}
+
 android {
     compileSdkVersion 27
 
@@ -23,12 +27,15 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
-
 }
 
 dependencies {
-    implementation 'com.android.support:support-annotations:27.1.1'
-    implementation 'com.github.shxhzhxx:ImageLoader:1.0.2'
+    implementation "com.android.support:appcompat-v7:$supportLibVersion"
+    implementation "com.android.support:support-annotations:$supportLibVersion"
+    implementation "com.android.support:exifinterface:$supportLibVersion"
+    implementation "com.android.support:design:$supportLibVersion"
+    implementation 'com.github.shxhzhxx:ImageLoader:1.0.3'
+    implementation 'com.github.yalantis:ucrop:2.2.2'
 }
 
 // 指定编码

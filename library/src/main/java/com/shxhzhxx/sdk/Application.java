@@ -3,6 +3,10 @@ package com.shxhzhxx.sdk;
 import android.os.Build;
 
 import com.shxhzhxx.imageloader.ImageLoader;
+import com.shxhzhxx.sdk.utils.FileUtils;
+import com.shxhzhxx.sdk.utils.Res;
+import com.shxhzhxx.sdk.utils.Settings;
+import com.shxhzhxx.sdk.utils.ToastUtils;
 
 public class Application extends android.app.Application {
     @Override
@@ -10,6 +14,10 @@ public class Application extends android.app.Application {
         super.onCreate();
         ImageLoader.init(this);
         Net.init(this);
+        FileUtils.init(this);
+        Settings.init(this);
+        Res.init(this);
+        ToastUtils.init(this);
     }
 
     @Override
