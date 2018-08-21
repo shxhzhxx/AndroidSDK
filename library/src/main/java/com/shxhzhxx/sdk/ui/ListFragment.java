@@ -4,7 +4,6 @@ import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.v4.app.Fragment;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -14,23 +13,24 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.shxhzhxx.sdk.BaseFragment;
 import com.shxhzhxx.sdk.R;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public abstract class ListFragment<M, VH extends RecyclerView.ViewHolder, A extends RecyclerView.Adapter<VH>> extends Fragment implements SwipeRefreshLayout.OnRefreshListener {
+public abstract class ListFragment<M, VH extends RecyclerView.ViewHolder, A extends RecyclerView.Adapter<VH>> extends BaseFragment implements SwipeRefreshLayout.OnRefreshListener {
     public abstract class LoadCallback {
         /**
          * 必须调用这个方法来结束加载过程。
-         * */
+         */
         public abstract void onResult();
 
         /**
          * 调用这个方法代表成功获取指定页面的数据。
          * 失败时不需要调用。
          * 这个方法的调用必须在{@link #onResult()}后面，且中间不能插入对{@link ListFragment#nextPage(int)}的调用
-         * */
+         */
         public abstract void onLoad(List<M> list);
     }
 
