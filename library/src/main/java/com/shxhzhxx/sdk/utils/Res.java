@@ -6,6 +6,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Build;
 import android.util.DisplayMetrics;
+import android.util.TypedValue;
 
 public abstract class Res {
     private static Resources res;
@@ -36,9 +37,12 @@ public abstract class Res {
         return res.getDimension(id);
     }
 
-    public static int calPx(int dp) {
-        final float scale = displayMetrics.density;
-        return (int) (dp * scale + 0.5f);
+    public static int dpToPx(float dp) {
+        return (int) (dp * displayMetrics.density + 0.5f);
+    }
+
+    public static int spToPx(float sp){
+        return (int) (sp * displayMetrics.scaledDensity + 0.5f);
     }
 
     public static int getStatusBarHeight() {
@@ -46,6 +50,6 @@ public abstract class Res {
         if (resourceId != 0) {
             return res.getDimensionPixelSize(resourceId);
         }
-        return calPx(24);
+        return dpToPx(24);
     }
 }
