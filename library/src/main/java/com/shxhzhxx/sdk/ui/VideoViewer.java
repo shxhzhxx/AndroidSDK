@@ -261,7 +261,8 @@ public class VideoViewer extends FrameLayout implements TextureView.SurfaceTextu
     public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
         mPlayCondRun.setEventA(false);
         mPrepareCondRun.setEventA(false);
-        mPlayer.pause();
+        if (mPlayer.isPlaying())
+            mPlayer.pause();
         mPlayer.setSurface(null);
         updateBtn();
         return true;
