@@ -249,8 +249,10 @@ public class VideoViewer extends FrameLayout implements TextureView.SurfaceTextu
 
     @Override
     public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
-        mPlayer.setSurface(new Surface(surface));
-        mPrepareCondRun.setEventA(true);
+        if(!mReleased){
+            mPlayer.setSurface(new Surface(surface));
+            mPrepareCondRun.setEventA(true);
+        }
     }
 
     @Override
@@ -259,12 +261,13 @@ public class VideoViewer extends FrameLayout implements TextureView.SurfaceTextu
 
     @Override
     public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
-        mPlayCondRun.setEventA(false);
-        mPrepareCondRun.setEventA(false);
-        if (mPlayer.isPlaying())
+        if (!mReleased) {
+            mPlayCondRun.setEventA(false);
+            mPrepareCondRun.setEventA(false);
             mPlayer.pause();
-        mPlayer.setSurface(null);
-        updateBtn();
+            mPlayer.setSurface(null);
+            updateBtn();
+        }
         return true;
     }
 
