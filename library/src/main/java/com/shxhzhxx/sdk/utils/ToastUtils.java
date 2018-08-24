@@ -10,7 +10,6 @@ public abstract class ToastUtils {
     }
     public static void show(String msg){
         mToast.setText(msg);
-        mToast.cancel();
         mToast.show();
     }
 }
