@@ -21,9 +21,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ImageViewerActivity extends BaseActivity {
-    public static void start(Activity context, ArrayList<String> urls, int position, @Nullable List<Pair<View, String>> pairs) {
+    public static void start(Activity context, ArrayList<String> paths, int position, @Nullable List<Pair<View, String>> pairs) {
         Intent intent = new Intent(context, ImageViewerActivity.class);
-        intent.putStringArrayListExtra("urls", urls);
+        intent.putStringArrayListExtra("paths", paths);
         intent.putExtra("position", position);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && pairs != null) {
             intent.putExtra("transition", true);
@@ -34,7 +34,7 @@ public class ImageViewerActivity extends BaseActivity {
         }
     }
 
-    private ArrayList<String> mUrls;
+    private ArrayList<String> mPaths;
     private List<ImageView> mCache = new ArrayList<>();
     private ViewPager mPager;
     private boolean mWaitTransition = false;
@@ -44,22 +44,22 @@ public class ImageViewerActivity extends BaseActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_image_viewer);
 
-        mUrls = getIntent().getStringArrayListExtra("urls");
+        mPaths = getIntent().getStringArrayListExtra("paths");
         int position = getIntent().getIntExtra("position", -1);
-        if (mUrls == null || position >= mUrls.size() || position < 0)
+        if (mPaths == null || position >= mPaths.size() || position < 0)
             return;
 
         mWaitTransition = getIntent().getBooleanExtra("transition", false);
         mPager = findViewById(R.id.pager);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && mWaitTransition) {
             supportPostponeEnterTransition();
-            mPager.setTransitionName(mUrls.get(position));
+            mPager.setTransitionName(mPaths.get(position));
         }
         mPager.setOffscreenPageLimit(2);
         mPager.setAdapter(new PagerAdapter() {
             @Override
             public int getCount() {
-                return mUrls.size();
+                return mPaths.size();
             }
 
             @Override
@@ -77,10 +77,10 @@ public class ImageViewerActivity extends BaseActivity {
                 } else {
                     view = mCache.remove(0);
                 }
-                String url = mUrls.get(position);
+                String path = mPaths.get(position);
                 if (mWaitTransition) {
                     mWaitTransition = false;
-                    ImageLoader.getInstance().load(url).tag(IDENTIFY).callback(new ImageLoader.Callback() {
+                    ImageLoader.getInstance().load(path).tag(IDENTIFY).callback(new ImageLoader.Callback() {
                         @Override
                         public void onComplete() {
                             supportStartPostponedEnterTransition();
@@ -97,7 +97,7 @@ public class ImageViewerActivity extends BaseActivity {
                         }
                     }).into(view);
                 } else {
-                    ImageLoader.getInstance().load(url).tag(IDENTIFY).into(view);
+                    ImageLoader.getInstance().load(path).tag(IDENTIFY).into(view);
                 }
                 container.addView(view);
                 return view;
@@ -113,7 +113,7 @@ public class ImageViewerActivity extends BaseActivity {
             @Override
             public void onPageSelected(int position) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                    mPager.setTransitionName(mUrls.get(position));
+                    mPager.setTransitionName(mPaths.get(position));
                 }
             }
         });
