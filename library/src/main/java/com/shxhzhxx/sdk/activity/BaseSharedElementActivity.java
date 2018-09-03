@@ -19,6 +19,9 @@ import android.transition.Transition;
  *
  * {@link #runAfterTransition(Runnable)}调用渲染UI
  *
+ * 由于java不支持多重继承，这个类通常是没法直接用的，因为每个项目基本都会有一个定制的BaseActivity需要继承。
+ * 接下来需要研究一下如何用注解来自动生成代码。
+ *
  */
 public class BaseSharedElementActivity extends BaseActivity {
     private boolean mTransitionEnd = true, mNullTransitionException = false;
