@@ -32,11 +32,11 @@ import java.io.IOException;
 
 
 /**
- * surface( A )----------------------|
- * * * * * * * * * * * * * * * * * * |
- * setData --- prepared( B )-------( A )-----------|
- * * * * * * * * * * * * * * * * * * * * * * * * * |
- * * * * * * * * * * * * * * *start( B )---------play
+ * surface------------------------0----|
+ * * * * * * * * * * * * * * * * * * * |
+ * setData --- prepared-----------1----|---------play
+ * * * * * * * * * * * * * * * * * * * |
+ * start--------------------------2----|
  */
 
 public class VideoViewer extends FrameLayout implements TextureView.SurfaceTextureListener, View.OnClickListener, SeekBar.OnSeekBarChangeListener,
