@@ -84,12 +84,12 @@ public class Net extends MultiObserverTaskManager<Net.NetListener> {
     private String DEFAULT_ERROR_MESSAGE;
 
     public Net(Context context) {
-        super(3);
+        super(5);
         mConnMgr = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
         mCodeMessage = new SparseArray<>();
         mOkHttpClient = new OkHttpClient.Builder()
-                .writeTimeout(0, TimeUnit.SECONDS)
-                .readTimeout(0, TimeUnit.SECONDS)
+                .writeTimeout(3, TimeUnit.SECONDS)
+                .readTimeout(20, TimeUnit.SECONDS)
                 .connectTimeout(5, TimeUnit.SECONDS)
                 .build();
 
