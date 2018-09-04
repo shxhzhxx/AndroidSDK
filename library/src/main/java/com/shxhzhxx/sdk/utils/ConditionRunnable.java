@@ -1,22 +1,25 @@
 package com.shxhzhxx.sdk.utils;
 
-public abstract class ConditionRunnable implements Runnable{
-    private boolean mEventA = false, mEventB = false;
+import android.support.annotation.IntRange;
 
-    public void setEventA(boolean cond) {
-        mEventA = cond;
-        if (mEventA && mEventB)
-            run();
+public abstract class ConditionRunnable implements Runnable {
+    private final boolean[] conditions;
+
+    public ConditionRunnable(@IntRange(from = 1) int size) {
+        conditions = new boolean[size];
     }
 
-    public void setEventB(boolean cond) {
-        mEventB = cond;
-        if (mEventA && mEventB)
-            run();
+    public void setCond(int index, boolean cond) {
+        conditions[index] = cond;
+        for (boolean e : conditions)
+            if (!e)
+                return;
+        run();
     }
 
     public void reset() {
-        mEventA = false;
-        mEventB = false;
+        for (int i = 0; i < conditions.length; ++i) {
+            conditions[i] = false;
+        }
     }
 }

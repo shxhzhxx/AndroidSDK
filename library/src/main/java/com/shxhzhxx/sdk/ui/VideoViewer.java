@@ -72,23 +72,17 @@ public class VideoViewer extends FrameLayout implements TextureView.SurfaceTextu
         }
     };
 
-    private ConditionRunnable mPrepareCondRun = new ConditionRunnable() {
+    private ConditionRunnable mPlayCondRun = new ConditionRunnable(3) {
         @Override
         public void run() {
-            mPlayCondRun.setEventA(true);
-        }
-    };
-    private ConditionRunnable mPlayCondRun = new ConditionRunnable() {
-        @Override
-        public void run() {
-            mPlayCondRun.setEventB(false);
+            mPlayCondRun.setCond(2,false);
             mPreview.setVisibility(INVISIBLE);
             mPlayer.start();
             updateBtn();
             mUpdateProgressTask.run();
         }
     };
-    private ConditionRunnable mShowCtrlCondRun = new ConditionRunnable() {
+    private ConditionRunnable mShowCtrlCondRun = new ConditionRunnable(2) {
         @Override
         public void run() {
             mControlLayout.setVisibility(VISIBLE);
@@ -151,9 +145,8 @@ public class VideoViewer extends FrameLayout implements TextureView.SurfaceTextu
     public void setDataSource(String path) throws IOException {
         if (mReleased)
             return;
-        mPlayCondRun.setEventA(false);
-        mPrepareCondRun.setEventB(false);
-        mShowCtrlCondRun.setEventA(false);
+        mPlayCondRun.setCond(1,false);
+        mShowCtrlCondRun.setCond(0, false);
 
         mControlDismissRun.run();
         if (mPlayer.isPlaying())
@@ -170,15 +163,15 @@ public class VideoViewer extends FrameLayout implements TextureView.SurfaceTextu
     public void start() {
         if (mReleased)
             return;
-        mPlayCondRun.setEventB(true);
-        mShowCtrlCondRun.setEventB(true);
+        mPlayCondRun.setCond(2,true);
+        mShowCtrlCondRun.setCond(1,true);
     }
 
     private void pause() {
-        mPlayCondRun.setEventB(false);
+        mPlayCondRun.setCond(2,false);
         mPlayer.pause();
         updateBtn();
-        mShowCtrlCondRun.setEventB(true);
+        mShowCtrlCondRun.setCond(1,true);
     }
 
     /**
@@ -249,9 +242,9 @@ public class VideoViewer extends FrameLayout implements TextureView.SurfaceTextu
 
     @Override
     public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
-        if(!mReleased){
+        if (!mReleased) {
             mPlayer.setSurface(new Surface(surface));
-            mPrepareCondRun.setEventA(true);
+            mPlayCondRun.setCond(0,true);
         }
     }
 
@@ -262,8 +255,7 @@ public class VideoViewer extends FrameLayout implements TextureView.SurfaceTextu
     @Override
     public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
         if (!mReleased) {
-            mPlayCondRun.setEventA(false);
-            mPrepareCondRun.setEventA(false);
+            mPlayCondRun.setCond(0,false);
             mPlayer.pause();
             mPlayer.setSurface(null);
             updateBtn();
@@ -288,7 +280,7 @@ public class VideoViewer extends FrameLayout implements TextureView.SurfaceTextu
                 mHandler.removeCallbacks(mControlDismissRun);
                 mControlDismissRun.run();
             } else {
-                mShowCtrlCondRun.setEventB(true);
+                mShowCtrlCondRun.setCond(1,true);
             }
         }
     }
@@ -302,7 +294,7 @@ public class VideoViewer extends FrameLayout implements TextureView.SurfaceTextu
             } else {
                 mSeekBar.setProgress(mPlayer.getCurrentPosition());
             }
-            mShowCtrlCondRun.setEventB(true);
+            mShowCtrlCondRun.setCond(1,true);
         }
     }
 
@@ -313,13 +305,13 @@ public class VideoViewer extends FrameLayout implements TextureView.SurfaceTextu
 
     @Override
     public void onStopTrackingTouch(SeekBar seekBar) {
-        mShowCtrlCondRun.setEventB(true);
+        mShowCtrlCondRun.setCond(1,true);
     }
 
     @Override
     public void onCompletion(MediaPlayer mp) {
         updateBtn();
-        mShowCtrlCondRun.setEventB(true);
+        mShowCtrlCondRun.setCond(1,true);
     }
 
     @Override
@@ -334,9 +326,9 @@ public class VideoViewer extends FrameLayout implements TextureView.SurfaceTextu
         mPlayer.start();
         mPlayer.pause();
 
-        mShowCtrlCondRun.setEventB(true);
-        mShowCtrlCondRun.setEventA(true);
-        mPrepareCondRun.setEventB(true);
+        mShowCtrlCondRun.setCond(1,true);
+        mShowCtrlCondRun.setCond(0,true);
+        mPlayCondRun.setCond(1,true);
     }
 
     @Override
@@ -346,7 +338,6 @@ public class VideoViewer extends FrameLayout implements TextureView.SurfaceTextu
 
     @Override
     public boolean onError(MediaPlayer mp, int what, int extra) {
-        mPrepareCondRun.setEventB(false);
         mPlayCondRun.reset();
         mShowCtrlCondRun.reset();
         mControlDismissRun.run();
