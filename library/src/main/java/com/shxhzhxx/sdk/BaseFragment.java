@@ -4,6 +4,7 @@ import android.support.v4.app.Fragment;
 import android.view.View;
 
 import com.shxhzhxx.imageloader.ImageLoader;
+import com.shxhzhxx.sdk.network.Net;
 
 public class BaseFragment extends Fragment implements View.OnClickListener {
     protected String TAG = this.getClass().getSimpleName();

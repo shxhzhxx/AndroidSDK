@@ -3,6 +3,7 @@ package com.shxhzhxx.sdk;
 import android.os.Build;
 
 import com.shxhzhxx.imageloader.ImageLoader;
+import com.shxhzhxx.sdk.network.Net;
 import com.shxhzhxx.sdk.utils.FileUtils;
 import com.shxhzhxx.sdk.utils.Res;
 import com.shxhzhxx.sdk.utils.Settings;

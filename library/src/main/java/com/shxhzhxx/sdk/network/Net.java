@@ -1,4 +1,4 @@
-package com.shxhzhxx.sdk;
+package com.shxhzhxx.sdk.network;
 
 import android.content.Context;
 import android.content.res.Resources;
@@ -10,6 +10,7 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.util.SparseArray;
 
+import com.shxhzhxx.sdk.R;
 import com.shxhzhxx.urlloader.MultiObserverTaskManager;
 
 import org.json.JSONException;
@@ -328,6 +329,7 @@ public class Net extends MultiObserverTaskManager<Net.NetListener> {
     public static String formatJsonString(String raw, int len_limit) {
         if (TextUtils.isEmpty(raw) || len_limit < 0)
             return "";
+        raw = raw.replaceAll("\\s*", "");
         StringBuilder result = new StringBuilder();
         String row_head = "";
         String tab_space = "   ";

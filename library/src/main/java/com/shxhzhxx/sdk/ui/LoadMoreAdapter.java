@@ -52,7 +52,7 @@ public class LoadMoreAdapter<VH extends RecyclerView.ViewHolder> extends Recycle
     public int getItemViewType(int position) {
         if (mVisible && position == getItemCount() - 1)
             return LOADING_LAYOUT_ID;
-        return super.getItemViewType(position);
+        return mWrapped.getItemViewType(position);
     }
 
     @Override

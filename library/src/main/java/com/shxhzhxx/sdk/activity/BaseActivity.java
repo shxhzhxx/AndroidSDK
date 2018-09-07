@@ -8,7 +8,7 @@ import android.view.Window;
 import android.view.WindowManager;
 
 import com.shxhzhxx.imageloader.ImageLoader;
-import com.shxhzhxx.sdk.Net;
+import com.shxhzhxx.sdk.network.Net;
 
 public class BaseActivity extends DownloadActivity implements View.OnClickListener {
     protected String TAG = this.getClass().getSimpleName();
