@@ -36,7 +36,6 @@ public abstract class ListFragment<M, VH extends RecyclerView.ViewHolder, A exte
 
     private final int LOAD_MORE = 1;
     private final int REFRESH = 1 << 1;
-    private final int SWIPE = 1 << 2;
     private SwipeRefreshLayout mSwipe;
     private List<M> mList = new ArrayList<>();
     private LoadMoreAdapter mLoadMoreAdapter;
@@ -95,15 +94,14 @@ public abstract class ListFragment<M, VH extends RecyclerView.ViewHolder, A exte
         });
         mLoadMoreAdapter = new LoadMoreAdapter(onAdapter());
         mListView.setAdapter(mLoadMoreAdapter);
-        mEnableLoadMore = true;
         mLoadMoreAdapter.setLoadingVisible(false);
 
         refresh();
     }
 
     public final void refresh() {
-        if (mSwipe.isEnabled())
-            nextPage(REFRESH);
+        mSwipe.setRefreshing(true);
+        onRefresh();
     }
 
     protected int pageSize() {
@@ -129,7 +127,7 @@ public abstract class ListFragment<M, VH extends RecyclerView.ViewHolder, A exte
 
     @Override
     public final void onRefresh() {
-        nextPage(SWIPE);
+        nextPage(REFRESH);
     }
 
     /**
@@ -139,15 +137,11 @@ public abstract class ListFragment<M, VH extends RecyclerView.ViewHolder, A exte
         mEnableLoadMore = false;
         mSwipe.setEnabled(false);
         final int page = pageStartAt() +
-                ((flag & (REFRESH | SWIPE)) != 0 ? 0 : mList.size() / pageSize());
-
-        if ((flag & (SWIPE | LOAD_MORE)) == 0) {
-            mSwipe.setRefreshing(true);
-        }
+                ((flag & REFRESH) != 0 ? 0 : mList.size() / pageSize());
         onNextPage(page, new LoadCallback() {
             @Override
             public void onResult() {
-                if ((flag & (REFRESH | SWIPE)) != 0) {
+                if ((flag & REFRESH) != 0) {
                     mSwipe.setRefreshing(false);
                     mList.clear();
                     mLoadMoreAdapter.notifyDataSetChanged();
