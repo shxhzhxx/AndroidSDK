@@ -101,18 +101,14 @@ public abstract class ListFragment<M, VH extends RecyclerView.ViewHolder, A exte
         refresh();
     }
 
-    public void refresh() {
+    public final void refresh() {
         if (mSwipe.isEnabled())
             nextPage(REFRESH);
     }
 
-    protected int pageSize() {
-        return 10;
-    }
+    protected abstract int pageSize();
 
-    protected int pageStartAt() {
-        return 0;
-    }
+    protected abstract int pageStartAt();
 
     @NonNull
     protected abstract A onAdapter();
@@ -128,14 +124,14 @@ public abstract class ListFragment<M, VH extends RecyclerView.ViewHolder, A exte
     }
 
     @Override
-    public void onRefresh() {
+    public final void onRefresh() {
         nextPage(SWIPE);
     }
 
     /**
      * 回调{@link LoadCallback#onResult()}之前不允许再次调用本方法。
      */
-    protected void nextPage(final int flag) {
+    private void nextPage(final int flag) {
         mEnableLoadMore = false;
         mSwipe.setEnabled(false);
         final int page = pageStartAt() + (flag & (REFRESH | SWIPE)) != 0 ? 0 : mList.size() / pageSize();
