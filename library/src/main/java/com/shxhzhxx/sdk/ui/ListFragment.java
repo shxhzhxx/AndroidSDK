@@ -101,7 +101,7 @@ public abstract class ListFragment<M, VH extends RecyclerView.ViewHolder, A exte
         refresh();
     }
 
-    public final void refresh() {
+    public void refresh() {
         if (mSwipe.isEnabled())
             nextPage(REFRESH);
     }
@@ -128,7 +128,7 @@ public abstract class ListFragment<M, VH extends RecyclerView.ViewHolder, A exte
     }
 
     @Override
-    public final void onRefresh() {
+    public void onRefresh() {
         nextPage(SWIPE);
     }
 
