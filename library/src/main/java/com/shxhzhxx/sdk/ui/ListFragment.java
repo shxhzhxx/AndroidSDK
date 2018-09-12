@@ -135,7 +135,7 @@ public abstract class ListFragment<M, VH extends RecyclerView.ViewHolder, A exte
     /**
      * 回调{@link LoadCallback#onResult()}之前不允许再次调用本方法。
      */
-    private void nextPage(final int flag) {
+    protected void nextPage(final int flag) {
         mEnableLoadMore = false;
         mSwipe.setEnabled(false);
         final int page = pageStartAt() + (flag & (REFRESH | SWIPE)) != 0 ? 0 : mList.size() / pageSize();
