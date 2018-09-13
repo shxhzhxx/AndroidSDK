@@ -22,19 +22,19 @@ public class LinearSpacingItemDecoration extends RecyclerView.ItemDecoration {
     @Override
     public void getItemOffsets(Rect outRect, View view, RecyclerView parent, RecyclerView.State state) {
         int position = parent.getChildAdapterPosition(view);
-        int a = includeEdge || position < parent.getAdapter().getItemCount() - 1 ? space : 0;
-        int b = includeEdge && position == 0 ? space : 0;
+        int start = includeEdge || position > 0 ? space : 0;
+        int end = includeEdge && position == parent.getAdapter().getItemCount() - 1 ? space : 0;
 
         if (orientation == HORIZONTAL) {
             outRect.top = 0;
             outRect.bottom = 0;
-            outRect.right = a;
-            outRect.left = b;
+            outRect.left = start;
+            outRect.right = end;
         } else {
             outRect.left = 0;
             outRect.right = 0;
-            outRect.bottom = a;
-            outRect.top = b;
+            outRect.top = start;
+            outRect.bottom = end;
         }
     }
 }
