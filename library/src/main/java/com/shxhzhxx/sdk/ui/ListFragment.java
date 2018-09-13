@@ -29,18 +29,16 @@ public abstract class ListFragment<M, VH extends RecyclerView.ViewHolder, A exte
         /**
          * 调用这个方法代表成功获取指定页面的数据。
          * 失败时不需要调用。
-         * 这个方法的调用必须在{@link #onResult()}后面，且中间不能插入对{@link ListFragment#nextPage(int)}的调用
+         * 这个方法的调用必须在{@link #onResult()}后面，且中间不能插入对{@link ListFragment#nextPage(boolean)}的调用
          */
         public abstract void onLoad(List<M> list);
     }
 
-    private final int LOAD_MORE = 1;
-    private final int REFRESH = 1 << 1;
     private SwipeRefreshLayout mSwipe;
     private List<M> mList = new ArrayList<>();
     private LoadMoreAdapter mLoadMoreAdapter;
     private RecyclerView mListView;
-    private boolean mEnableLoadMore = true, mDetectScrollGesture = true;
+    private boolean mEnableLoadMore = true, mDetectScrollGesture = true, mLoading = false;
 
     @Nullable
     @Override
@@ -61,10 +59,10 @@ public abstract class ListFragment<M, VH extends RecyclerView.ViewHolder, A exte
         final GestureDetector detector = new GestureDetector(getContext(), new GestureDetector.SimpleOnGestureListener() {
             @Override
             public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
-                if (mDetectScrollGesture && mEnableLoadMore && !mListView.canScrollVertically(1) && distanceY > 0 && !mLoadMoreAdapter.isLoadingVisible()) {
+                if (mDetectScrollGesture && mEnableLoadMore && !mListView.canScrollVertically(1) && distanceY > 0) {
                     mDetectScrollGesture = false;
                     mLoadMoreAdapter.setLoadingVisible(true);
-                    nextPage(LOAD_MORE);
+                    nextPage(false);
                 }
                 return super.onScroll(e1, e2, distanceX, distanceY);
             }
@@ -85,10 +83,12 @@ public abstract class ListFragment<M, VH extends RecyclerView.ViewHolder, A exte
         mListView.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+                if (mLoading) {
+                    return;
+                }
                 boolean enable = !mListView.canScrollVertically(-1);
                 if (enable != mSwipe.isEnabled()) {
                     mSwipe.setEnabled(enable);
-                    mSwipe.setRefreshing(false);
                 }
             }
         });
@@ -104,6 +104,9 @@ public abstract class ListFragment<M, VH extends RecyclerView.ViewHolder, A exte
         onRefresh();
     }
 
+    /**
+     * 返回值不要太小，金量避免一屏高度可以显示一页数据的情况。
+     */
     protected int pageSize() {
         return 10;
     }
@@ -127,28 +130,31 @@ public abstract class ListFragment<M, VH extends RecyclerView.ViewHolder, A exte
 
     @Override
     public final void onRefresh() {
-        nextPage(REFRESH);
+        nextPage(true);
     }
 
     /**
      * 回调{@link LoadCallback#onResult()}之前不允许再次调用本方法。
      */
-    private void nextPage(final int flag) {
+    private void nextPage(final boolean refresh) {
+        mLoading = true;
         mEnableLoadMore = false;
-        mSwipe.setEnabled(false);
-        final int page = pageStartAt() +
-                ((flag & REFRESH) != 0 ? 0 : mList.size() / pageSize());
+        final int page = pageStartAt() + (refresh ? 0 : mList.size() / pageSize());
+        if (!refresh) {
+            mSwipe.setEnabled(false);
+        }
         onNextPage(page, new LoadCallback() {
             @Override
             public void onResult() {
-                if ((flag & REFRESH) != 0) {
+                mLoading = false;
+                if (refresh) {
                     mSwipe.setRefreshing(false);
                     mList.clear();
                     mLoadMoreAdapter.notifyDataSetChanged();
                 }
                 mLoadMoreAdapter.setLoadingVisible(false);
                 mEnableLoadMore = true;
-                mSwipe.setEnabled(true);
+                mSwipe.setEnabled(!mListView.canScrollVertically(-1));
             }
 
             @Override
