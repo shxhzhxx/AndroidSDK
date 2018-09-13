@@ -96,6 +96,10 @@ public abstract class ListFragment<M, VH extends RecyclerView.ViewHolder, A exte
         mListView.setAdapter(mLoadMoreAdapter);
         mLoadMoreAdapter.setLoadingVisible(false);
 
+        View cv = customizeView();
+        if (cv != null) {
+            ((ViewGroup) view.findViewById(R.id.root)).addView(cv);
+        }
         refresh();
     }
 
@@ -113,6 +117,11 @@ public abstract class ListFragment<M, VH extends RecyclerView.ViewHolder, A exte
 
     protected int pageStartAt() {
         return 0;
+    }
+
+    @Nullable
+    protected View customizeView() {
+        return null;
     }
 
     @NonNull
