@@ -23,7 +23,7 @@ import android.transition.Transition;
  * 接下来需要研究一下如何用注解来自动生成代码。
  *
  */
-public class BaseSharedElementActivity extends BaseActivity {
+public abstract class BaseSharedElementActivity extends BaseActivity {
     private boolean mTransitionEnd = true, mNullTransitionException = false;
     private Runnable mRunAfterTran = null;
 
