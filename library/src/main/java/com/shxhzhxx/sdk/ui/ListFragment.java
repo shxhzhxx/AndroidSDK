@@ -1,6 +1,7 @@
 package com.shxhzhxx.sdk.ui;
 
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -96,7 +97,7 @@ public abstract class ListFragment<M, VH extends RecyclerView.ViewHolder, A exte
         mListView.setAdapter(mLoadMoreAdapter);
         mLoadMoreAdapter.setLoadingVisible(false);
 
-        View cv = customizeView();
+        View cv = customizeView(view.getContext());
         if (cv != null) {
             ((ViewGroup) view.findViewById(R.id.root)).addView(cv);
         }
@@ -120,7 +121,7 @@ public abstract class ListFragment<M, VH extends RecyclerView.ViewHolder, A exte
     }
 
     @Nullable
-    protected View customizeView() {
+    protected View customizeView(Context context) {
         return null;
     }
 
