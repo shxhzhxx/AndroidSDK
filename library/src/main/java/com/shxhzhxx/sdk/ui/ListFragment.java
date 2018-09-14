@@ -13,6 +13,7 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 
 import com.shxhzhxx.sdk.BaseFragment;
 import com.shxhzhxx.sdk.R;
@@ -96,11 +97,7 @@ public abstract class ListFragment<M, VH extends RecyclerView.ViewHolder, A exte
         mLoadMoreAdapter = new LoadMoreAdapter(onAdapter());
         mListView.setAdapter(mLoadMoreAdapter);
         mLoadMoreAdapter.setLoadingVisible(false);
-
-        View cv = customizeView(view.getContext());
-        if (cv != null) {
-            ((ViewGroup) view.findViewById(R.id.root)).addView(cv);
-        }
+        customizeView(view.getContext(), view.<ViewGroup>findViewById(R.id.root));
         refresh();
     }
 
@@ -120,9 +117,7 @@ public abstract class ListFragment<M, VH extends RecyclerView.ViewHolder, A exte
         return 0;
     }
 
-    @Nullable
-    protected View customizeView(Context context) {
-        return null;
+    protected void customizeView(Context context,ViewGroup parent) {
     }
 
     @NonNull
