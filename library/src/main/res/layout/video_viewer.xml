@@ -29,7 +29,7 @@
             android:padding="5dp"
             android:layout_gravity="center"
             android:contentDescription="@null"
-            android:background="@drawable/play_btn_bg"/>
+            android:background="@drawable/play_bg_circle"/>
 
         <LinearLayout
             android:layout_width="match_parent"
