@@ -20,6 +20,9 @@ import com.shxhzhxx.sdk.R;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * {@link com.shxhzhxx.sdk.ui.HolderRefAdapter} could help.
+ * */
 public class ImageViewerActivity extends BaseActivity {
     public static void start(Activity context, ArrayList<String> paths, int position, @Nullable List<Pair<View, String>> pairs) {
         Intent intent = new Intent(context, ImageViewerActivity.class);

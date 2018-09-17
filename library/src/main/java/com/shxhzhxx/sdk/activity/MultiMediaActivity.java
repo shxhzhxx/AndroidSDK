@@ -6,9 +6,6 @@ import android.graphics.Bitmap;
 import android.graphics.Matrix;
 import android.net.Uri;
 import android.os.Build;
-import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
 import android.provider.MediaStore;
 import android.support.annotation.Nullable;
 import android.support.media.ExifInterface;
@@ -114,7 +111,7 @@ public abstract class MultiMediaActivity extends ForResultActivity {
                     intent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
                 }
                 if (intent.resolveActivity(getPackageManager()) != null) {
-                    startActivityForResult(intent, new ResultListener() {
+                    startActivityForResult(Intent.createChooser(intent, null), new ResultListener() {
                         @Override
                         public void onResult(int resultCode, Intent data) {
                             if (resultCode == RESULT_OK) {
@@ -122,7 +119,7 @@ public abstract class MultiMediaActivity extends ForResultActivity {
                                     @Override
                                     public void run() {
                                         reviseRotateImageFile(file, width, height);
-                                        new Handler(Looper.getMainLooper()).post(new Runnable() {
+                                        runOnUiThread(new Runnable() {
                                             @Override
                                             public void run() {
                                                 listener.onSuccess(Uri.fromFile(file));
@@ -159,7 +156,7 @@ public abstract class MultiMediaActivity extends ForResultActivity {
                 Intent intent = new Intent(Intent.ACTION_PICK);
                 intent.setType(type);
                 if (intent.resolveActivity(getPackageManager()) != null) {
-                    startActivityForResult(intent, new ResultListener() {
+                    startActivityForResult(Intent.createChooser(intent, null), new ResultListener() {
                         @Override
                         public void onResult(int resultCode, Intent data) {
                             if (resultCode == RESULT_OK) {
@@ -217,7 +214,7 @@ public abstract class MultiMediaActivity extends ForResultActivity {
                 intent.setType("*/*");
                 intent.addCategory(Intent.CATEGORY_OPENABLE);
                 if (intent.resolveActivity(getPackageManager()) != null) {
-                    startActivityForResult(intent, new ResultListener() {
+                    startActivityForResult(Intent.createChooser(intent, null), new ResultListener() {
                         @Override
                         public void onResult(int resultCode, Intent data) {
                             if (resultCode == RESULT_OK) {
