@@ -71,7 +71,6 @@ public class VideoViewer extends FrameLayout implements TextureView.SurfaceTextu
                 mHandler.postDelayed(this, 500);
         }
     };
-
     private ConditionRunnable mPlayCondRun = new ConditionRunnable(3) {
         @Override
         public void run() {
@@ -80,6 +79,7 @@ public class VideoViewer extends FrameLayout implements TextureView.SurfaceTextu
             mPlayer.start();
             updateBtn();
             mUpdateProgressTask.run();
+            mShowCtrlCondRun.setCond(1,true);
         }
     };
     private ConditionRunnable mShowCtrlCondRun = new ConditionRunnable(2) {
@@ -114,7 +114,7 @@ public class VideoViewer extends FrameLayout implements TextureView.SurfaceTextu
         TypedArray a = context.getTheme().obtainStyledAttributes(attrs,
                 R.styleable.VideoViewer, 0, 0);
         try {
-            CONTROL_DISMISS_INTERVAL = a.getInteger(R.styleable.VideoViewer_controlDismissInterval, 5000);
+            CONTROL_DISMISS_INTERVAL = a.getInteger(R.styleable.VideoViewer_controlDismissInterval, 3000);
         } finally {
             a.recycle();
         }
@@ -164,7 +164,6 @@ public class VideoViewer extends FrameLayout implements TextureView.SurfaceTextu
         if (mReleased)
             return;
         mPlayCondRun.setCond(2,true);
-        mShowCtrlCondRun.setCond(1,true);
     }
 
     private void pause() {
