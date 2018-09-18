@@ -3,6 +3,7 @@ package com.shxhzhxx.sdk.activity;
 import android.app.Activity;
 import android.app.ActivityOptions;
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -46,6 +47,7 @@ public class ImageViewerActivity extends BaseActivity {
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setStatusBarColor(Color.TRANSPARENT,true);
         setContentView(R.layout.activity_image_viewer);
 
         mPaths = getIntent().getStringArrayListExtra("paths");
