@@ -14,6 +14,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 
+import com.github.chrisbanes.photoview.PhotoView;
 import com.shxhzhxx.imageloader.ImageLoader;
 import com.shxhzhxx.sdk.R;
 
@@ -75,7 +76,7 @@ public class ImageViewerActivity extends BaseActivity {
             public Object instantiateItem(@NonNull ViewGroup container, final int position) {
                 ImageView view;
                 if (mCache.isEmpty()) {
-                    view = new ImageView(ImageViewerActivity.this);
+                    view = new PhotoView(ImageViewerActivity.this);
                     view.setOnClickListener(ImageViewerActivity.this);
                 } else {
                     view = mCache.remove(0);
