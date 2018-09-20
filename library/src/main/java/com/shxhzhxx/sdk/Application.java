@@ -24,7 +24,7 @@ public class Application extends android.app.Application {
     @Override
     public void onTrimMemory(int level) {
         super.onTrimMemory(level);
-        if(level==TRIM_MEMORY_RUNNING_CRITICAL || level==TRIM_MEMORY_RUNNING_LOW || level==TRIM_MEMORY_RUNNING_MODERATE){
+        if (level == TRIM_MEMORY_RUNNING_CRITICAL || level == TRIM_MEMORY_RUNNING_LOW || level == TRIM_MEMORY_RUNNING_MODERATE) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
                 ImageLoader.getInstance().getBitmapLoader().trimMemory(false);
             }

@@ -34,7 +34,7 @@ dependencies {
     implementation "com.android.support:support-annotations:$supportLibVersion"
     implementation "com.android.support:exifinterface:$supportLibVersion"
     implementation "com.android.support:design:$supportLibVersion"
-    implementation 'com.github.shxhzhxx:ImageLoader:1.0.8'
+    implementation 'com.github.shxhzhxx:ImageLoader:1.0.9'
     implementation 'com.github.yalantis:ucrop:2.2.2'
     implementation 'com.github.chrisbanes:PhotoView:2.1.4'
 }
