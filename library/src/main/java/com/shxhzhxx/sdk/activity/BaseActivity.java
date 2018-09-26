@@ -63,7 +63,7 @@ public class BaseActivity extends DownloadActivity implements View.OnClickListen
      * <p>
      * 如果想要布局与状态栏重叠，可以使用{@link #setStatusBarColor(int, boolean)}，
      * 第一个参数传{@link android.graphics.Color#TRANSPARENT}，第二个参数根据布局颜色确定；
-     * 布局根视图设置{@link View#setSystemUiVisibility(int)}为false（默认属性）。
+     * 布局根视图设置{@link View#setFitsSystemWindows(boolean)}为false（默认属性）。
      */
     protected void fullscreen() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
