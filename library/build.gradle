@@ -2,22 +2,18 @@ apply plugin: 'com.android.library'
 apply plugin: 'com.github.dcendents.android-maven'
 group='com.github.shxhzhxx'
 
-ext {
-    supportLibVersion = '27.1.1'
-}
-
 android {
-    compileSdkVersion 27
+    compileSdkVersion 28
 
 
 
     defaultConfig {
         minSdkVersion 14
-        targetSdkVersion 27
+        targetSdkVersion 28
         versionCode 1
         versionName "1.0"
 
-        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
     }
 
@@ -30,11 +26,11 @@ android {
 }
 
 dependencies {
-    implementation "com.android.support:appcompat-v7:$supportLibVersion"
-    implementation "com.android.support:support-annotations:$supportLibVersion"
-    implementation "com.android.support:exifinterface:$supportLibVersion"
-    implementation "com.android.support:design:$supportLibVersion"
-    implementation 'com.github.shxhzhxx:ImageLoader:1.1.1'
+    implementation 'androidx.appcompat:appcompat:1.0.0-rc01'
+    implementation 'androidx.annotation:annotation:1.0.0-rc01'
+    implementation 'androidx.exifinterface:exifinterface:1.0.0-rc01'
+    implementation 'com.google.android.material:material:1.0.0-rc01'
+    implementation 'com.github.shxhzhxx:ImageLoader:1.1.2'
     implementation 'com.github.yalantis:ucrop:2.2.2'
     implementation 'com.github.chrisbanes:PhotoView:2.1.4'
 }

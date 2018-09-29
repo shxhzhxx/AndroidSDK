@@ -3,17 +3,16 @@ package com.shxhzhxx.sdk.ui;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.v4.widget.SwipeRefreshLayout;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 import android.view.GestureDetector;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.TextView;
 
 import com.shxhzhxx.sdk.BaseFragment;
 import com.shxhzhxx.sdk.R;
@@ -56,7 +55,7 @@ public abstract class ListFragment<M, VH extends RecyclerView.ViewHolder, A exte
         mSwipe = view.findViewById(R.id.swipe);
         mSwipe.setOnRefreshListener(this);
         mListView = view.findViewById(R.id.list);
-        mListView.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.VERTICAL, false));
+        mListView.setLayoutManager(new LinearLayoutManager(getContext(), RecyclerView.VERTICAL, false));
 
         final GestureDetector detector = new GestureDetector(getContext(), new GestureDetector.SimpleOnGestureListener() {
             @Override
@@ -84,7 +83,7 @@ public abstract class ListFragment<M, VH extends RecyclerView.ViewHolder, A exte
         });
         mListView.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
-            public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+            public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
                 if (mLoading) {
                     return;
                 }

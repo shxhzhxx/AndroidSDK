@@ -7,8 +7,8 @@ import android.graphics.Matrix;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.MediaStore;
-import android.support.annotation.Nullable;
-import android.support.media.ExifInterface;
+import androidx.annotation.Nullable;
+import androidx.exifinterface.media.ExifInterface;
 
 import com.shxhzhxx.imageloader.BitmapLoader;
 import com.shxhzhxx.sdk.utils.FileUtils;

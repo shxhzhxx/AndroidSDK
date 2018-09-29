@@ -1,6 +1,6 @@
 package com.shxhzhxx.sdk.utils;
 
-import android.support.annotation.IntRange;
+import androidx.annotation.IntRange;
 
 public abstract class ConditionRunnable implements Runnable {
     private final boolean[] conditions;

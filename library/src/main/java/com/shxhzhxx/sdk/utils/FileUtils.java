@@ -9,7 +9,6 @@ import android.os.Build;
 import android.os.Environment;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
-import android.support.v4.content.FileProvider;
 import android.text.TextUtils;
 
 import java.io.File;
@@ -19,6 +18,8 @@ import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.util.Locale;
 import java.util.UUID;
+
+import androidx.core.content.FileProvider;
 
 public abstract class FileUtils {
     private static File mExternalCacheDir;
@@ -78,8 +79,8 @@ public abstract class FileUtils {
 
     public static Uri getUriForFile(Context context, File file) {
         Uri uri;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N ) {
-            uri = FileProvider.getUriForFile(context, String.format(Locale.CHINA,"%s.FileProvider",context.getPackageName()), file);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            uri = FileProvider.getUriForFile(context, String.format(Locale.CHINA, "%s.FileProvider", context.getPackageName()), file);
         } else {
             uri = Uri.fromFile(file);
         }
@@ -87,7 +88,7 @@ public abstract class FileUtils {
     }
 
     public static File getFileByUri(Context context, Uri uri) {
-        if (uri == null) {
+        if (uri == null || uri.getPath() == null) {
             return null;
         }
 
