@@ -9,6 +9,7 @@ import android.content.IntentFilter;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
+import android.provider.Settings;
 
 import com.shxhzhxx.sdk.utils.FileUtils;
 
@@ -120,13 +121,25 @@ public abstract class DownloadActivity extends MultiMediaActivity {
     }
 
     protected void promptInstall(Uri uri) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !getPackageManager().canRequestPackageInstalls()) {
+            final Uri finalUri = uri;
+            startActivityForResult(new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:" + getPackageName())), new ResultListener() {
+                @Override
+                public void onResult(int resultCode, Intent data) {
+                    if (resultCode == RESULT_OK) {
+                        promptInstall(finalUri);
+                    }
+                }
+            });
+            return;
+        }
         Intent intent = new Intent(Intent.ACTION_VIEW);
         // FLAG_ACTIVITY_NEW_TASK 可以保证安装成功时可以正常打开 app
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
         } else {
-            if (uri.getScheme().equals("content")) {//api24以下版本不支持scheme为content的uri，转换为path
+            if ("content".equals(uri.getScheme())) {//api24以下版本不支持scheme为content的uri，转换为path
                 uri = FileUtils.getUriForFile(this, FileUtils.getFileByUri(this, uri));
             }
         }
