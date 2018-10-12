@@ -3,11 +3,6 @@ package com.shxhzhxx.sdk.ui;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.os.Bundle;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 import android.view.GestureDetector;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -19,6 +14,12 @@ import com.shxhzhxx.sdk.R;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 public abstract class ListFragment<M, VH extends RecyclerView.ViewHolder, A extends RecyclerView.Adapter<VH>> extends BaseFragment implements SwipeRefreshLayout.OnRefreshListener {
     public abstract class LoadCallback {
@@ -55,7 +56,7 @@ public abstract class ListFragment<M, VH extends RecyclerView.ViewHolder, A exte
         mSwipe = view.findViewById(R.id.swipe);
         mSwipe.setOnRefreshListener(this);
         mListView = view.findViewById(R.id.list);
-        mListView.setLayoutManager(new LinearLayoutManager(getContext(), RecyclerView.VERTICAL, false));
+        mListView.setLayoutManager(onLayoutManager());
 
         final GestureDetector detector = new GestureDetector(getContext(), new GestureDetector.SimpleOnGestureListener() {
             @Override
@@ -116,7 +117,11 @@ public abstract class ListFragment<M, VH extends RecyclerView.ViewHolder, A exte
         return 0;
     }
 
-    protected void customizeView(Context context,ViewGroup parent) {
+    protected void customizeView(Context context, ViewGroup parent) {
+    }
+
+    protected RecyclerView.LayoutManager onLayoutManager() {
+        return new LinearLayoutManager(getContext(), RecyclerView.VERTICAL, false);
     }
 
     @NonNull
