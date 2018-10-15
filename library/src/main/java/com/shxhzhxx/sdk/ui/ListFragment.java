@@ -102,12 +102,14 @@ public abstract class ListFragment<M, VH extends RecyclerView.ViewHolder, A exte
     }
 
     public final void refresh() {
-        mSwipe.setRefreshing(true);
-        onRefresh();
+        if (mSwipe != null) {
+            mSwipe.setRefreshing(true);
+            onRefresh();
+        }
     }
 
     /**
-     * 返回值不要太小，金量避免一屏高度可以显示一页数据的情况。
+     * 返回值不要太小，尽量避免一屏高度可以显示一页数据的情况。
      */
     protected int pageSize() {
         return 10;
