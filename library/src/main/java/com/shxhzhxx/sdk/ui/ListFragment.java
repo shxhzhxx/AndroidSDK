@@ -126,6 +126,10 @@ public abstract class ListFragment<M, VH extends RecyclerView.ViewHolder, A exte
         return new LinearLayoutManager(getContext(), RecyclerView.VERTICAL, false);
     }
 
+    protected void addItemDecoration(@NonNull RecyclerView.ItemDecoration decor) {
+        mListView.addItemDecoration(decor);
+    }
+
     @NonNull
     protected abstract A onAdapter();
 
