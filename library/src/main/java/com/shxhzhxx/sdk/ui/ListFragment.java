@@ -143,6 +143,10 @@ public abstract class ListFragment<M, VH extends RecyclerView.ViewHolder, A exte
         return mList.get(position);
     }
 
+    protected List<M> getList() {
+        return new ArrayList<>(mList);
+    }
+
     @Override
     public final void onRefresh() {
         nextPage(true);
