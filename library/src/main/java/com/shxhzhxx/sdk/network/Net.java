@@ -329,7 +329,6 @@ public class Net extends MultiObserverTaskManager<Net.NetListener> {
     public static String formatJsonString(String raw, int len_limit) {
         if (TextUtils.isEmpty(raw) || len_limit < 0)
             return "";
-        raw = raw.replaceAll("\\s*", "");
         StringBuilder result = new StringBuilder();
         String row_head = "";
         String tab_space = "   ";
@@ -338,6 +337,9 @@ public class Net extends MultiObserverTaskManager<Net.NetListener> {
         for (int i = 0; i < max_index; ++i) {
             if (quotation && !raw.substring(i, i + 1).equals("\"")) {
                 result.append(raw.substring(i, i + 1));
+                continue;
+            }
+            if(!quotation && raw.substring(i,i+1).matches("\\s*")){ //跳过引号外的空白符
                 continue;
             }
             switch (raw.substring(i, i + 1)) {

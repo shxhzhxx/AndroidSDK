@@ -1,13 +1,14 @@
 package com.shxhzhxx.sdk.ui;
 
 import android.graphics.Rect;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 import android.view.View;
 
+import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.RecyclerView;
+
 public class LinearSpacingItemDecoration extends RecyclerView.ItemDecoration {
-    public static final int HORIZONTAL = LinearLayoutManager.HORIZONTAL;
-    public static final int VERTICAL = LinearLayoutManager.VERTICAL;
+    public static final int HORIZONTAL = RecyclerView.HORIZONTAL;
+    public static final int VERTICAL = RecyclerView.VERTICAL;
 
     private int space;
     private int orientation;
@@ -20,10 +21,13 @@ public class LinearSpacingItemDecoration extends RecyclerView.ItemDecoration {
     }
 
     @Override
-    public void getItemOffsets(Rect outRect, View view, RecyclerView parent, RecyclerView.State state) {
+    public void getItemOffsets(@NonNull Rect outRect, @NonNull View view, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
+        RecyclerView.Adapter adapter = parent.getAdapter();
+        if (adapter == null)
+            return;
         int position = parent.getChildAdapterPosition(view);
         int start = includeEdge || position > 0 ? space : 0;
-        int end = includeEdge && position == parent.getAdapter().getItemCount() - 1 ? space : 0;
+        int end = includeEdge && position == adapter.getItemCount() - 1 ? space : 0;
 
         if (orientation == HORIZONTAL) {
             outRect.top = 0;

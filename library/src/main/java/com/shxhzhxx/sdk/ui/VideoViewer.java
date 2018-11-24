@@ -145,13 +145,7 @@ public class VideoViewer extends FrameLayout implements TextureView.SurfaceTextu
     public void setDataSource(String path) throws IOException {
         if (mReleased)
             return;
-        mPlayCondRun.setCond(1,false);
-        mShowCtrlCondRun.setCond(0, false);
-
-        mControlDismissRun.run();
-        if (mPlayer.isPlaying())
-            mPlayer.stop();
-        mPlayer.reset();
+        reset();
 
         String scheme = Uri.parse(path).getScheme();
         mFileSource = scheme == null || "file".equals(scheme);
@@ -166,7 +160,21 @@ public class VideoViewer extends FrameLayout implements TextureView.SurfaceTextu
         mPlayCondRun.setCond(2,true);
     }
 
-    private void pause() {
+    public void reset(){
+        if (mReleased)
+            return;
+        mPlayCondRun.setCond(1,false);
+        mShowCtrlCondRun.setCond(0, false);
+
+        mControlDismissRun.run();
+        if (mPlayer.isPlaying())
+            mPlayer.stop();
+        mPlayer.reset();
+        mSeekBar.setProgress(0);
+        updateBtn();
+    }
+
+    public void pause() {
         mPlayCondRun.setCond(2,false);
         mPlayer.pause();
         updateBtn();
