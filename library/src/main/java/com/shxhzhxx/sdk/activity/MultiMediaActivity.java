@@ -7,8 +7,6 @@ import android.graphics.Matrix;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.MediaStore;
-import androidx.annotation.Nullable;
-import androidx.exifinterface.media.ExifInterface;
 
 import com.shxhzhxx.imageloader.BitmapLoader;
 import com.shxhzhxx.sdk.utils.FileUtils;
@@ -19,12 +17,18 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
+import androidx.annotation.Nullable;
+import androidx.exifinterface.media.ExifInterface;
+
 public abstract class MultiMediaActivity extends ForResultActivity {
     public abstract static class GetMediaListener {
         public void onSuccess(Uri uri) {
         }
 
         public void onFailed() {
+        }
+
+        public void onRotate() {
         }
     }
 
@@ -115,6 +119,7 @@ public abstract class MultiMediaActivity extends ForResultActivity {
                         @Override
                         public void onResult(int resultCode, Intent data) {
                             if (resultCode == RESULT_OK) {
+                                listener.onRotate();
                                 new Thread(new Runnable() {
                                     @Override
                                     public void run() {
