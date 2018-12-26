@@ -6,7 +6,6 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Build;
 import android.util.DisplayMetrics;
-import android.util.TypedValue;
 
 public abstract class Res {
     private static Resources res;
@@ -17,8 +16,8 @@ public abstract class Res {
         displayMetrics = context.getResources().getDisplayMetrics();
     }
 
-    public static String getString(int id) {
-        return res.getString(id);
+    public static String getString(int id,Object... formatArgs) {
+        return res.getString(id,formatArgs);
     }
 
     public static int getColor(int id) {
