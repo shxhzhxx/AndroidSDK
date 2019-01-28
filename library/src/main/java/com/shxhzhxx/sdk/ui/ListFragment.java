@@ -89,7 +89,7 @@ public abstract class ListFragment<M, VH extends RecyclerView.ViewHolder, A exte
                     return;
                 }
                 boolean enable = !mListView.canScrollVertically(-1);
-                if (enable != mSwipe.isEnabled()) {
+                if (enable != mSwipe.isEnabled() && !mSwipe.isRefreshing()) {
                     mSwipe.setEnabled(enable);
                 }
             }
@@ -103,7 +103,8 @@ public abstract class ListFragment<M, VH extends RecyclerView.ViewHolder, A exte
 
     public final void refresh() {
         if (mSwipe != null) {
-            mSwipe.setRefreshing(true);
+            if (!mSwipe.isRefreshing())
+                mSwipe.setRefreshing(true);
             onRefresh();
         }
     }
@@ -159,7 +160,7 @@ public abstract class ListFragment<M, VH extends RecyclerView.ViewHolder, A exte
         mLoading = true;
         mEnableLoadMore = false;
         final int page = pageStartAt() + (refresh ? 0 : mList.size() / pageSize());
-        if (!refresh) {
+        if (!refresh && !mSwipe.isRefreshing()) {
             mSwipe.setEnabled(false);
         }
         onNextPage(page, new LoadCallback() {
@@ -173,7 +174,8 @@ public abstract class ListFragment<M, VH extends RecyclerView.ViewHolder, A exte
                 }
                 mLoadMoreAdapter.setLoadingVisible(false);
                 mEnableLoadMore = true;
-                mSwipe.setEnabled(!mListView.canScrollVertically(-1));
+                if (!mSwipe.isRefreshing())
+                    mSwipe.setEnabled(!mListView.canScrollVertically(-1));
             }
 
             @Override
