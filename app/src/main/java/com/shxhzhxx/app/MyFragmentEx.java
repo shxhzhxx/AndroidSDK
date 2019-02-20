@@ -6,7 +6,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import com.shxhzhxx.sdk.ui.ListFragment;
+import com.shxhzhxx.sdk.ui.ListFragmentEx;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,7 +14,7 @@ import java.util.List;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-public class MyFragment extends ListFragment<MyFragment.Model, MyFragment.MyHolder, MyFragment.MyAdapter> {
+public class MyFragmentEx extends ListFragmentEx<MyFragmentEx.Model, MyFragmentEx.MyHolder, MyFragmentEx.MyAdapter> {
     @NonNull
     @Override
     protected MyAdapter onAdapter() {

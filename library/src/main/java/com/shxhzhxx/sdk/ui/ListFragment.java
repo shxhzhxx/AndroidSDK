@@ -1,14 +1,18 @@
 package com.shxhzhxx.sdk.ui;
 
-import android.annotation.SuppressLint;
 import android.content.Context;
 import android.os.Bundle;
-import android.view.GestureDetector;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.scwang.smartrefresh.layout.SmartRefreshLayout;
+import com.scwang.smartrefresh.layout.api.RefreshLayout;
+import com.scwang.smartrefresh.layout.constant.RefreshState;
+import com.scwang.smartrefresh.layout.listener.OnLoadMoreListener;
 import com.shxhzhxx.sdk.BaseFragment;
 import com.shxhzhxx.sdk.R;
 
@@ -17,30 +21,28 @@ import java.util.List;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 public abstract class ListFragment<M, VH extends RecyclerView.ViewHolder, A extends RecyclerView.Adapter<VH>> extends BaseFragment implements SwipeRefreshLayout.OnRefreshListener {
-    public abstract class LoadCallback {
-        /**
-         * 必须调用这个方法来结束加载过程。
-         */
-        public abstract void onResult();
-
-        /**
-         * 调用这个方法代表成功获取指定页面的数据。
-         * 失败时不需要调用。
-         * 这个方法的调用必须在{@link #onResult()}后面，且中间不能插入对{@link ListFragment#nextPage(boolean)}的调用
-         */
-        public abstract void onLoad(List<M> list);
-    }
-
-    private SwipeRefreshLayout mSwipe;
     private List<M> mList = new ArrayList<>();
-    private LoadMoreAdapter mLoadMoreAdapter;
+    private boolean mLoading = false;
+    private SwipeRefreshLayout mSwipe;
+    private SmartRefreshLayout mSmartRefreshLayout;
+    private A mListAdapter = onAdapter();
     private RecyclerView mListView;
-    private boolean mEnableLoadMore = true, mDetectScrollGesture = true, mLoading = false;
+    protected Handler mHandler = new Handler(Looper.getMainLooper());
+    private Runnable mEventRunnable = new Runnable() {
+        @Override
+        public void run() {
+            mSmartRefreshLayout.setEnableLoadMore(!mSwipe.isRefreshing());//根据mSwipe的isRefreshing状态来判断事件是否要禁止mSmartRefreshLayout可用
+            mSwipe.setEnabled(mSmartRefreshLayout.getState() != RefreshState.ReleaseToLoad &&
+                    mSmartRefreshLayout.getState() != RefreshState.LoadReleased &&
+                    mSmartRefreshLayout.getState() != RefreshState.Loading);  //根据mSmartRefreshLayout的Load状态来判断事件是否要禁止mSwipe可用
+        }
+    };
 
     @Nullable
     @Override
@@ -48,63 +50,45 @@ public abstract class ListFragment<M, VH extends RecyclerView.ViewHolder, A exte
         return inflater.inflate(R.layout.fragment_list, container, false);
     }
 
-    @SuppressLint("ClickableViewAccessibility")
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
+        InterceptFrameLayout rootLayout = view.findViewById(R.id.rootLayout);
         mSwipe = view.findViewById(R.id.swipe);
         mSwipe.setOnRefreshListener(this);
-        mListView = view.findViewById(R.id.list);
+        mSmartRefreshLayout = view.findViewById(R.id.smartRefreshLayout);
+
+        mListView = view.findViewById(R.id.listRecyclerView);
+        mListView.setItemAnimator(onItemAnimator());
         mListView.setLayoutManager(onLayoutManager());
+        mListView.setAdapter(mListAdapter);
 
-        final GestureDetector detector = new GestureDetector(getContext(), new GestureDetector.SimpleOnGestureListener() {
+        mSmartRefreshLayout.setEnableRefresh(false);
+        mSmartRefreshLayout.setOnLoadMoreListener(new OnLoadMoreListener() {
             @Override
-            public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
-                if (mDetectScrollGesture && mEnableLoadMore && !mListView.canScrollVertically(1) && distanceY > 0) {
-                    mDetectScrollGesture = false;
-                    mLoadMoreAdapter.setLoadingVisible(true);
-                    nextPage(false);
-                }
-                return super.onScroll(e1, e2, distanceX, distanceY);
+            public void onLoadMore(@NonNull RefreshLayout refreshLayout) {
+                nextPage();
             }
+        });
 
+        rootLayout.setInterceptListener(new InterceptFrameLayout.InterceptListener() {
             @Override
-            public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
-                //一次滑动手势触发一次刷新，防止多次触发
-                mDetectScrollGesture = true;
-                return super.onFling(e1, e2, velocityX, velocityY);
+            public boolean onInterceptTouchEvent(MotionEvent ev) {
+                mEventRunnable.run();
+                mHandler.post(mEventRunnable);
+                return false;
             }
         });
-        mListView.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                return detector.onTouchEvent(event);
-            }
-        });
-        mListView.addOnScrollListener(new RecyclerView.OnScrollListener() {
-            @Override
-            public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
-                if (mLoading) {
-                    return;
-                }
-                boolean enable = !mListView.canScrollVertically(-1);
-                if (enable != mSwipe.isEnabled() && !mSwipe.isRefreshing()) {
-                    mSwipe.setEnabled(enable);
-                }
-            }
-        });
-        mLoadMoreAdapter = new LoadMoreAdapter(onAdapter());
-        mListView.setAdapter(mLoadMoreAdapter);
-        mLoadMoreAdapter.setLoadingVisible(false);
-        customizeView(view.getContext(), view.<ViewGroup>findViewById(R.id.root));
+
+        mSwipe.setOnRefreshListener(this);
+        customizeView(getContext(), view.<ViewGroup>findViewById(R.id.rooContentFl));
         refresh();
     }
 
     public final void refresh() {
         if (mSwipe != null) {
-            if (!mSwipe.isRefreshing())
-                mSwipe.setRefreshing(true);
+            mSwipe.setRefreshing(true);
             onRefresh();
         }
     }
@@ -128,10 +112,17 @@ public abstract class ListFragment<M, VH extends RecyclerView.ViewHolder, A exte
     }
 
     protected void addItemDecoration(@NonNull RecyclerView.ItemDecoration decor) {
-        mListView.addItemDecoration(decor);
+        if (mListView != null) {
+            mListView.addItemDecoration(decor);
+        }
+    }
+
+    protected RecyclerView.ItemAnimator onItemAnimator() {
+        return new DefaultItemAnimator();
     }
 
     @NonNull
+
     protected abstract A onAdapter();
 
     protected abstract void onNextPage(int page, LoadCallback callback);
@@ -150,43 +141,59 @@ public abstract class ListFragment<M, VH extends RecyclerView.ViewHolder, A exte
 
     @Override
     public final void onRefresh() {
-        nextPage(true);
+        nextPage();
     }
 
-    /**
-     * 回调{@link LoadCallback#onResult()}之前不允许再次调用本方法。
-     */
-    private void nextPage(final boolean refresh) {
+    private void nextPage() {
+        if (mLoading)
+            return;
         mLoading = true;
-        mEnableLoadMore = false;
+
+        final boolean refresh = mSwipe.isRefreshing();
         final int page = pageStartAt() + (refresh ? 0 : mList.size() / pageSize());
-        if (!refresh && !mSwipe.isRefreshing()) {
+        if (refresh) {
+            mSmartRefreshLayout.setEnableLoadMore(false);
+        } else {
             mSwipe.setEnabled(false);
         }
         onNextPage(page, new LoadCallback() {
             @Override
             public void onResult() {
-                mLoading = false;
                 if (refresh) {
-                    mSwipe.setRefreshing(false);
                     mList.clear();
-                    mLoadMoreAdapter.notifyDataSetChanged();
+                    mListAdapter.notifyDataSetChanged();
                 }
-                mLoadMoreAdapter.setLoadingVisible(false);
-                mEnableLoadMore = true;
-                if (!mSwipe.isRefreshing())
-                    mSwipe.setEnabled(!mListView.canScrollVertically(-1));
+                mLoading = false;
+                mSwipe.setEnabled(true);
+                mSwipe.setRefreshing(false);
+                mSmartRefreshLayout.setEnableLoadMore(true);
+                mSmartRefreshLayout.finishLoadMore();
             }
 
             @Override
             public void onLoad(List<M> list) {
+                mSmartRefreshLayout.setEnableLoadMore(list.size() == pageSize());
                 if (!list.isEmpty()) {
                     int start = mList.size();
                     mList.addAll(list);
-                    mLoadMoreAdapter.notifyItemRangeInserted(start, list.size());
+                    mListAdapter.notifyItemRangeInserted(start, mList.size());
                 }
-                mEnableLoadMore = list.size() == pageSize();
             }
         });
     }
+
+    public abstract class LoadCallback {
+        /**
+         * 必须调用这个方法来结束加载过程。
+         */
+        public abstract void onResult();
+
+        /**
+         * 调用这个方法代表成功获取指定页面的数据。
+         * 失败时不需要调用。
+         * 这个方法的调用必须在{@link #onResult()}后面，且中间不能插入对{@link ListFragment#nextPage()}的调用
+         */
+        public abstract void onLoad(List<M> list);
+    }
+
 }
