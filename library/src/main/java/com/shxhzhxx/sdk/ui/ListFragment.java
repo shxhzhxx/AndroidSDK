@@ -38,7 +38,7 @@ public abstract class ListFragment<M, VH extends RecyclerView.ViewHolder, A exte
     private Runnable mEventRunnable = new Runnable() {
         @Override
         public void run() {
-            mSmartRefreshLayout.setEnableLoadMore(!mSwipe.isRefreshing());//根据mSwipe的isRefreshing状态来判断事件是否要禁止mSmartRefreshLayout可用
+            mSmartRefreshLayout.setEnableLoadMore(mList.size()%pageSize()==0 && !mSwipe.isRefreshing());//根据mSwipe的isRefreshing状态来判断事件是否要禁止mSmartRefreshLayout可用
             mSwipe.setEnabled(mSmartRefreshLayout.getState() != RefreshState.ReleaseToLoad &&
                     mSmartRefreshLayout.getState() != RefreshState.LoadReleased &&
                     mSmartRefreshLayout.getState() != RefreshState.Loading);  //根据mSmartRefreshLayout的Load状态来判断事件是否要禁止mSwipe可用
@@ -117,10 +117,6 @@ public abstract class ListFragment<M, VH extends RecyclerView.ViewHolder, A exte
     protected void onFooter(MaterialHeader footer) {
     }
 
-    protected boolean loadMoreEvenIfNoData() {
-        return false;
-    }
-
     protected RecyclerView.LayoutManager onLayoutManager() {
         return new LinearLayoutManager(getContext(), RecyclerView.VERTICAL, false);
     }
@@ -186,8 +182,7 @@ public abstract class ListFragment<M, VH extends RecyclerView.ViewHolder, A exte
 
             @Override
             public void onLoad(List<M> list) {
-                if (!loadMoreEvenIfNoData())
-                    mSmartRefreshLayout.setEnableLoadMore(list.size() >= pageSize());
+                mSmartRefreshLayout.setEnableLoadMore(list.size() == pageSize());
                 if (!list.isEmpty()) {
                     int start = mList.size();
                     mList.addAll(list);
