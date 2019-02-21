@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="AutoSizeAlertDialog" parent="AlertDialog.AppCompat.Light">
+        <item name="android:windowMinWidthMinor">300dp</item>
+        <item name="windowFixedWidthMinor">300dp</item>
+    </style>
+</resources>

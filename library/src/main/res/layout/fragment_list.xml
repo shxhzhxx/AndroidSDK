@@ -28,14 +28,12 @@
                     android:id="@+id/listRecyclerView"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:overScrollMode="never"
-                    android:visibility="visible"/>
+                    android:overScrollMode="never"/>
 
                 <FrameLayout
                     android:id="@+id/rooContentFl"
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:visibility="invisible"/>
+                    android:layout_height="match_parent"/>
 
             </FrameLayout>
 

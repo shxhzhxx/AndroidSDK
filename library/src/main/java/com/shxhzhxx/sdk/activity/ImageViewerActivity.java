@@ -149,30 +149,40 @@ public class ImageViewerActivity extends BaseActivity implements View.OnLongClic
 
     @Override
     public boolean onLongClick(View v) {
-        new AlertDialog.Builder(v.getContext()).setItems(new String[]{getString(R.string.save_image_to_sdcard)}, new DialogInterface.OnClickListener() {
+        new AlertDialog.Builder(v.getContext(),R.style.AutoSizeAlertDialog).setItems(new String[]{getString(R.string.save_image_to_sdcard)}, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 performRequestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, new PermissionsResultListener() {
                     @Override
                     public void onPermissionGranted() {
-                        ImageLoader.getInstance().getUrlLoader().load(mPaths.get(mPager.getCurrentItem()), TAG, new UrlLoader.ProgressObserver() {
-                            @Override
-                            public void onComplete(File file) {
-                                if (!Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())) {
-                                    ToastUtils.show(getString(R.string.unavailable_external_storage));
-                                } else {
-                                    File dest = new File(Environment.getExternalStoragePublicDirectory(
-                                            Environment.DIRECTORY_PICTURES), String.format("%s.jpg",ImageLoader.getInstance().getUrlLoader().md5(UUID.randomUUID().toString())));
-                                    if (FileUtils.copyFile(file, dest)) {
-                                        ToastUtils.show(getString(R.string.image_saved_format, dest.getAbsolutePath()));
-                                    }
+                        String path = mPaths.get(mPager.getCurrentItem());
+                        File f = new File(path);
+                        if (f.exists()) {
+                            saveImage(f);
+                        } else {
+                            ImageLoader.getInstance().getUrlLoader().load(path, TAG, new UrlLoader.ProgressObserver() {
+                                @Override
+                                public void onComplete(File file) {
+                                    saveImage(file);
                                 }
-                            }
-                        });
+                            });
+                        }
                     }
                 });
             }
         }).create().show();
         return true;
+    }
+
+    private void saveImage(File file) {
+        if (!Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())) {
+            ToastUtils.show(getString(R.string.unavailable_external_storage));
+        } else {
+            File dest = new File(Environment.getExternalStoragePublicDirectory(
+                    Environment.DIRECTORY_PICTURES), String.format("%s.jpg", ImageLoader.getInstance().getUrlLoader().md5(UUID.randomUUID().toString())));
+            if (FileUtils.copyFile(file, dest)) {
+                ToastUtils.show(getString(R.string.image_saved_format, dest.getAbsolutePath()));
+            }
+        }
     }
 }

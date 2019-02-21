@@ -1,7 +1,6 @@
 package com.shxhzhxx.sdk.ui;
 
 import android.content.Context;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -60,7 +59,7 @@ public abstract class ListFragment<M, VH extends RecyclerView.ViewHolder, A exte
         mSwipe = view.findViewById(R.id.swipe);
         mSwipe.setOnRefreshListener(this);
         onHeader(mSwipe);
-        MaterialHeader footer=view.findViewById(R.id.footer);
+        MaterialHeader footer = view.findViewById(R.id.footer);
         onFooter(footer);
         mSmartRefreshLayout = view.findViewById(R.id.smartRefreshLayout);
 
@@ -112,9 +111,15 @@ public abstract class ListFragment<M, VH extends RecyclerView.ViewHolder, A exte
     protected void customizeView(Context context, ViewGroup parent) {
     }
 
-    protected void onHeader(SwipeRefreshLayout header){}
+    protected void onHeader(SwipeRefreshLayout header) {
+    }
 
-    protected void onFooter(MaterialHeader footer){}
+    protected void onFooter(MaterialHeader footer) {
+    }
+
+    protected boolean loadMoreEvenIfNoData() {
+        return false;
+    }
 
     protected RecyclerView.LayoutManager onLayoutManager() {
         return new LinearLayoutManager(getContext(), RecyclerView.VERTICAL, false);
@@ -168,9 +173,9 @@ public abstract class ListFragment<M, VH extends RecyclerView.ViewHolder, A exte
             @Override
             public void onResult() {
                 if (refresh) {
-                    int size=mList.size();
+                    int size = mList.size();
                     mList.clear();
-                    mListAdapter.notifyItemRangeRemoved(0,size);
+                    mListAdapter.notifyItemRangeRemoved(0, size);
                 }
                 mLoading = false;
                 mSwipe.setEnabled(true);
@@ -181,7 +186,8 @@ public abstract class ListFragment<M, VH extends RecyclerView.ViewHolder, A exte
 
             @Override
             public void onLoad(List<M> list) {
-                mSmartRefreshLayout.setEnableLoadMore(list.size() == pageSize());
+                if (!loadMoreEvenIfNoData())
+                    mSmartRefreshLayout.setEnableLoadMore(list.size() >= pageSize());
                 if (!list.isEmpty()) {
                     int start = mList.size();
                     mList.addAll(list);
