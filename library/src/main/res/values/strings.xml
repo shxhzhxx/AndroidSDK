@@ -8,4 +8,8 @@
     <string name="err_msg_cancelled">请求已取消</string>
 
     <string name="permission_denied">缺少下列权限：\n%s\n请到应用管理中心开启</string>
+    
+    <string name="save_image_to_sdcard">保存图片到本地</string>
+    <string name="unavailable_external_storage">无法访问外部存储</string>
+    <string name="image_saved_format">图片保存至%s</string>
 </resources>

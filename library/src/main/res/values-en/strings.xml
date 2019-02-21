@@ -8,4 +8,8 @@
     <string name="err_msg_cancelled">Cancelled Request</string>
 
     <string name="permission_denied">Permission denied：\n\n%s\n</string>
+
+    <string name="save_image_to_sdcard">Save image to sdcard</string>
+    <string name="unavailable_external_storage">External storage is unavailable</string>
+    <string name="image_saved_format">Image saved to %s</string>
 </resources>

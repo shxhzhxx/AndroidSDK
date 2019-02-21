@@ -1,20 +1,23 @@
 package com.shxhzhxx.app;
 
+import android.graphics.Color;
 import android.os.Handler;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import com.shxhzhxx.sdk.ui.ListFragmentEx;
+import com.scwang.smartrefresh.header.MaterialHeader;
+import com.shxhzhxx.sdk.ui.ListFragment;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
-public class MyFragmentEx extends ListFragmentEx<MyFragmentEx.Model, MyFragmentEx.MyHolder, MyFragmentEx.MyAdapter> {
+public class MyFragmentEx extends ListFragment<MyFragmentEx.Model, MyFragmentEx.MyHolder, MyFragmentEx.MyAdapter> {
     @NonNull
     @Override
     protected MyAdapter onAdapter() {
@@ -23,7 +26,17 @@ public class MyFragmentEx extends ListFragmentEx<MyFragmentEx.Model, MyFragmentE
 
     @Override
     protected int pageSize() {
-        return 20;
+        return 3;
+    }
+
+    @Override
+    protected void onHeader(SwipeRefreshLayout header) {
+        header.setColorSchemeColors(Color.RED);
+    }
+
+    @Override
+    protected void onFooter(MaterialHeader footer) {
+        footer.setColorSchemeColors(Color.BLUE);
     }
 
     @Override
@@ -33,7 +46,7 @@ public class MyFragmentEx extends ListFragmentEx<MyFragmentEx.Model, MyFragmentE
             public void run() {
                 callback.onResult();
                 List<Model> list = new ArrayList<>();
-                for (int i = 0; i < 20; ++i) {
+                for (int i = 0; i < pageSize(); ++i) {
                     list.add(new Model());
                 }
                 callback.onLoad(list);

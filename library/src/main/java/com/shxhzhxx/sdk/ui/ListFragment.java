@@ -1,6 +1,7 @@
 package com.shxhzhxx.sdk.ui;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -9,6 +10,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.scwang.smartrefresh.header.MaterialHeader;
 import com.scwang.smartrefresh.layout.SmartRefreshLayout;
 import com.scwang.smartrefresh.layout.api.RefreshLayout;
 import com.scwang.smartrefresh.layout.constant.RefreshState;
@@ -57,6 +59,9 @@ public abstract class ListFragment<M, VH extends RecyclerView.ViewHolder, A exte
         InterceptFrameLayout rootLayout = view.findViewById(R.id.rootLayout);
         mSwipe = view.findViewById(R.id.swipe);
         mSwipe.setOnRefreshListener(this);
+        onHeader(mSwipe);
+        MaterialHeader footer=view.findViewById(R.id.footer);
+        onFooter(footer);
         mSmartRefreshLayout = view.findViewById(R.id.smartRefreshLayout);
 
         mListView = view.findViewById(R.id.listRecyclerView);
@@ -107,6 +112,10 @@ public abstract class ListFragment<M, VH extends RecyclerView.ViewHolder, A exte
     protected void customizeView(Context context, ViewGroup parent) {
     }
 
+    protected void onHeader(SwipeRefreshLayout header){}
+
+    protected void onFooter(MaterialHeader footer){}
+
     protected RecyclerView.LayoutManager onLayoutManager() {
         return new LinearLayoutManager(getContext(), RecyclerView.VERTICAL, false);
     }
@@ -122,7 +131,6 @@ public abstract class ListFragment<M, VH extends RecyclerView.ViewHolder, A exte
     }
 
     @NonNull
-
     protected abstract A onAdapter();
 
     protected abstract void onNextPage(int page, LoadCallback callback);
@@ -160,8 +168,9 @@ public abstract class ListFragment<M, VH extends RecyclerView.ViewHolder, A exte
             @Override
             public void onResult() {
                 if (refresh) {
+                    int size=mList.size();
                     mList.clear();
-                    mListAdapter.notifyDataSetChanged();
+                    mListAdapter.notifyItemRangeRemoved(0,size);
                 }
                 mLoading = false;
                 mSwipe.setEnabled(true);
