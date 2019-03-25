@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout
+<LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/swipe"
+    android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
-    <fragment
-        android:id="@+id/fragment"
-        class="com.shxhzhxx.app.MyFragmentEx"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"/>
+
     <Button
-        android:id="@+id/imageViewer"
-        android:text="imageViewer"
+        android:id="@+id/load"
+        android:text="load"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
+    <ImageView
+        android:id="@+id/iv"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
 
-</FrameLayout>
+</LinearLayout>
