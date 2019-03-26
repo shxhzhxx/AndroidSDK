@@ -1,4 +1,4 @@
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="err_msg_default">获取数据失败</string>
     <string name="err_msg_ok">获取数据成功</string>
     <string name="err_msg_no_available_network">没有可用的网络连接</string>
@@ -6,6 +6,7 @@
     <string name="err_msg_get_param_failed">创建请求参数失败</string>
     <string name="err_msg_unexpected_response">数据异常</string>
     <string name="err_msg_cancelled">请求已取消</string>
+    <string name="err_msg_multiple_request" tools:ignore="TypographyEllipsis">加载中，请稍后...</string>
 
     <string name="permission_denied">缺少下列权限：\n%s\n请到应用管理中心开启</string>
     

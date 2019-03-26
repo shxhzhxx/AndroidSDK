@@ -1,4 +1,4 @@
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="err_msg_default">Failed</string>
     <string name="err_msg_ok">OK</string>
     <string name="err_msg_no_available_network">No Available Network</string>
@@ -6,6 +6,7 @@
     <string name="err_msg_get_param_failed">Bad Request</string>
     <string name="err_msg_unexpected_response">Unexpected Response</string>
     <string name="err_msg_cancelled">Cancelled Request</string>
+    <string name="err_msg_multiple_request" tools:ignore="TypographyEllipsis">Loading...</string>
 
     <string name="permission_denied">Permission denied：\n\n%s\n</string>
 
