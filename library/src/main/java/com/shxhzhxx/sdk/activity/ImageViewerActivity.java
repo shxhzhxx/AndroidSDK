@@ -17,7 +17,6 @@ import com.github.chrisbanes.photoview.PhotoView;
 import com.shxhzhxx.imageloader.ImageLoader;
 import com.shxhzhxx.sdk.R;
 import com.shxhzhxx.sdk.utils.FileUtils;
-import com.shxhzhxx.sdk.utils.ToastUtils;
 import com.shxhzhxx.urlloader.UrlLoader;
 
 import java.io.File;
