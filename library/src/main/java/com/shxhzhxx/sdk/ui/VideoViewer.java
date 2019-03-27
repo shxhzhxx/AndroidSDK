@@ -26,7 +26,7 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 
 import com.shxhzhxx.sdk.R;
-import com.shxhzhxx.sdk.utils.ConditionRunnable;
+import com.shxhzhxx.sdk.utils.ConditionalAction;
 
 import java.io.IOException;
 
@@ -71,7 +71,7 @@ public class VideoViewer extends FrameLayout implements TextureView.SurfaceTextu
                 mHandler.postDelayed(this, 500);
         }
     };
-    private ConditionRunnable mPlayCondRun = new ConditionRunnable(3) {
+    private ConditionalAction mPlayCondRun = new ConditionalAction(3) {
         @Override
         public void run() {
             mPlayCondRun.setCond(2,false);
@@ -82,7 +82,7 @@ public class VideoViewer extends FrameLayout implements TextureView.SurfaceTextu
             mShowCtrlCondRun.setCond(1,true);
         }
     };
-    private ConditionRunnable mShowCtrlCondRun = new ConditionRunnable(2) {
+    private ConditionalAction mShowCtrlCondRun = new ConditionalAction(2) {
         @Override
         public void run() {
             mControlLayout.setVisibility(VISIBLE);

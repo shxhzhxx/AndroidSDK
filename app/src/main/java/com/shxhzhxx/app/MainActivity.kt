@@ -3,9 +3,9 @@ package com.shxhzhxx.app
 import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
-import com.shxhzhxx.sdk.imageLoader
-import com.shxhzhxx.sdk.net
 import com.shxhzhxx.sdk.network.formatJsonString
+import com.shxhzhxx.sdk.utils.ConditionalAction
+import com.shxhzhxx.sdk.utils.toast
 import kotlinx.android.synthetic.main.activity_main.*
 
 private const val TAG = "MainActivity"
@@ -26,12 +26,11 @@ class MainActivity : AppCompatActivity() {
         }
 
         load.setOnClickListener {
-            //            imageLoader.load(iv, "https://static.usasishu.com/image/2018/09/30/bg-index.jpg")
-            imageLoader.bitmapLoader.urlLoader.asyncLoad("https://static.usasishu.com/image/2018/09/30/bg-index.jpg", onComplete = {
-                net.postMultipartForm("https://www.baidu.com/", "upload", lifecycle, listOf("file" to it), onParams = { params ->
-                    params.put("a", 1).put("b", 2)
-                }, onResult = onResult)
-            })
+            toast(listOf("测试", "shxhzhxx", "djlsafjdks", "hahahah").random())
         }
+        val conRun = ConditionalAction(2) {
+
+        }
+        conRun[1]=true
     }
 }

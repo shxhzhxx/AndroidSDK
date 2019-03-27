@@ -6,10 +6,11 @@ import android.content.Context
 import android.os.Build
 import com.shxhzhxx.imageloader.ImageLoader
 import com.shxhzhxx.sdk.network.Net
+import com.shxhzhxx.sdk.utils.*
 
 
-lateinit var imageLoader: ImageLoader
-lateinit var net: Net
+lateinit var imageLoader: ImageLoader private set
+lateinit var net: Net private set
 
 @Target(AnnotationTarget.FUNCTION)
 @Retention(AnnotationRetention.RUNTIME)
@@ -22,17 +23,17 @@ open class Application : android.app.Application() {
         val processName = (getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager)
                 .runningAppProcesses.find { it.pid == android.os.Process.myPid() }?.processName
         javaClass.methods.filter { method -> method.annotations.any { it is OnProcessCreate && processName in it.processNames } }
-                .forEach { it.invoke(this) }
+                .forEach { it(this) }
     }
 
     @OnProcessCreate([BuildConfig.APPLICATION_ID])
     open fun onMainProcessCreate() {
         imageLoader = ImageLoader(cacheDir)
         net = Net(this)
-//        FileUtils.init(this)
-//        Settings.init(this)
-//        Res.init(this)
-//        ToastUtils.init(this)
+        initParams(this)
+        initToast(this)
+        initRes(this)
+        FileUtils.init(this)
     }
 
     override fun onTrimMemory(level: Int) {
