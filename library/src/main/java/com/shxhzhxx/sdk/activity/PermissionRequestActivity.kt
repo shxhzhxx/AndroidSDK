@@ -48,7 +48,7 @@ abstract class PermissionRequestActivity : AppCompatActivity() {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         val callback = mPermissionCallbacks.remove(requestCode)!!
         if (grantResults.isEmpty()) {// If request is cancelled, the result arrays are empty.
-            callback.onPermissionDenied(permissions)//TODO 
+            callback.onPermissionDenied(permissions)//TODO
         } else {
             val deniedPermissions = permissions.filterIndexed { index, _ -> grantResults[index] != PackageManager.PERMISSION_GRANTED }
             if (deniedPermissions.isEmpty()) {
