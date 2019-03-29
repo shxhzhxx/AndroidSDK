@@ -34,6 +34,7 @@ dependencies {
     implementation 'com.github.yalantis:ucrop:2.2.2'
     implementation 'com.github.chrisbanes:PhotoView:2.1.4'
     implementation 'androidx.exifinterface:exifinterface:1.0.0-rc02'
+    implementation 'com.blankj:utilcode:1.23.7'
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'androidx.test:runner:1.1.1'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.1.1'
