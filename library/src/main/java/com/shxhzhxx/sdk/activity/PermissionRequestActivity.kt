@@ -2,9 +2,8 @@ package com.shxhzhxx.sdk.activity
 
 import android.content.pm.PackageManager
 import android.os.Build
-import androidx.appcompat.app.AppCompatActivity
-import com.shxhzhxx.sdk.R
-import com.shxhzhxx.sdk.utils.toast
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 
 private class Holder(
         val onGranted: () -> Unit,
@@ -12,7 +11,7 @@ private class Holder(
         val onCanceled: () -> Unit
 )
 
-abstract class PermissionRequestActivity : AppCompatActivity() {
+abstract class PermissionRequestActivity : CoroutineActivity() {
     private val permissionCallbacks = HashMap<Int, Holder>()
 
     /**
@@ -21,9 +20,9 @@ abstract class PermissionRequestActivity : AppCompatActivity() {
      * @param permissions 要申请的权限数组
      */
     fun requestPermissions(permissions: List<String>, onGranted: () -> Unit = {},
-                           onDenied: (deniedPermissions: List<String>) -> Unit = { deniedPermissions -> toast(getString(R.string.permission_denied, deniedPermissions.joinToString(separator = "\n"))) },
-                           onCanceled: () -> Unit = { toast(getString(R.string.permission_canceled)) },
-                           onShouldExplain: (explainPermissions: List<String>, request: () -> Unit) -> Unit = { _, request -> request() }) {
+                           onDenied: (deniedPermissions: List<String>) -> Unit = {},
+                           onCanceled: () -> Unit = {},
+                           onShouldExplain: (explainPermissions: List<String>, continuation: (accepted: Boolean) -> Unit) -> Unit = { _, continuation -> continuation(true) }) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M || permissions.isEmpty()
                 || permissions.all { checkSelfPermission(it) == PackageManager.PERMISSION_GRANTED }) {
             onGranted()
@@ -38,12 +37,20 @@ abstract class PermissionRequestActivity : AppCompatActivity() {
             if (shouldExplanations.isEmpty()) {
                 request()
             } else {
-                onShouldExplain(shouldExplanations) {
-                    request()
+                onShouldExplain(shouldExplanations) { accepted ->
+                    if (accepted) request() else onDenied(permissions.filter { checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED })
                 }
             }
         }
     }
+
+    suspend fun requestPermissionsCoroutine(permissions: List<String>, onShouldExplain: (explainPermissions: List<String>, continuation: (accepted: Boolean) -> Unit) -> Unit = { _, continuation -> continuation(true) }): Boolean =
+            suspendCoroutine { continuation ->
+                requestPermissions(permissions,
+                        { continuation.resume(true) },
+                        { continuation.resume(false) },
+                        { continuation.resume(false) }, onShouldExplain)
+            }
 
 
     /**

@@ -6,7 +6,10 @@ import android.content.Context
 import android.os.Build
 import com.shxhzhxx.imageloader.ImageLoader
 import com.shxhzhxx.sdk.network.Net
-import com.shxhzhxx.sdk.utils.*
+import com.shxhzhxx.sdk.utils.FileUtils
+import com.shxhzhxx.sdk.utils.initParams
+import com.shxhzhxx.sdk.utils.initRes
+import com.shxhzhxx.sdk.utils.initToast
 
 
 lateinit var imageLoader: ImageLoader private set
@@ -28,7 +31,7 @@ open class Application : android.app.Application() {
 
     @OnProcessCreate([BuildConfig.APPLICATION_ID])
     open fun onMainProcessCreate() {
-        imageLoader = ImageLoader(cacheDir)
+        imageLoader = ImageLoader(contentResolver, cacheDir)
         net = Net(this)
         initParams(this)
         initToast(this)

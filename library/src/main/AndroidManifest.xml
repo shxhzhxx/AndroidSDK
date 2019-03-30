@@ -14,12 +14,12 @@
         <activity
             android:name="com.yalantis.ucrop.UCropActivity"
             android:theme="@style/Theme.AppCompat.Light.NoActionBar"/>
-        <activity
-            android:name=".activity.ImageViewerActivity"
-            android:screenOrientation="portrait"/>
-        <activity
-            android:name=".activity.VideoViewerActivity"
-            android:screenOrientation="landscape"/>
+        <!--<activity-->
+            <!--android:name=".activity.ImageViewerActivity"-->
+            <!--android:screenOrientation="portrait"/>-->
+        <!--<activity-->
+            <!--android:name=".activity.VideoViewerActivity"-->
+            <!--android:screenOrientation="landscape"/>-->
 
         <provider
             android:name="androidx.core.content.FileProvider"

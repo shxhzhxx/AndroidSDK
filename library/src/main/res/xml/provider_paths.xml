@@ -2,11 +2,14 @@
 <paths>
     <files-path
         name="my_files"
-        path="."/>
+        path="." />
     <cache-path
         name="my_cache"
-        path="."/>
+        path="." />
     <external-path
         name="my_external"
-        path="."/>
+        path="." />
+    <external-path
+        name="my_images"
+        path="Android/data/${applicationId}/files/Pictures" />
 </paths>

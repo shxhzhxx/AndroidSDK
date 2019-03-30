@@ -15,7 +15,7 @@ package com.shxhzhxx.sdk.activity;
 //
 //import java.util.HashMap;
 
-public abstract class DownloadActivity extends MultiMediaActivity {
+public abstract class DownloadActivity extends MultimediaActivity {
 //    public abstract class DownloadListener {
 //        public void onResult(Uri uri) {
 //        }
