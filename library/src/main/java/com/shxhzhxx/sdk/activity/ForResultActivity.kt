@@ -19,7 +19,7 @@ abstract class ForResultActivity : PermissionRequestActivity() {
                 startActivityForResult(intent) { resultCode, data -> continuation.resume(resultCode to data) }
             }
 
-    public override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+    final override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         resultCallbacks.remove(requestCode)!!(resultCode, data)
     }
 

@@ -13,7 +13,7 @@ import com.shxhzhxx.sdk.ui.VideoViewer;
 
 import java.io.IOException;
 
-public class VideoViewerActivity extends BaseActivity {
+public class VideoViewerActivity extends ForResultActivity {
 //    public static void start(Context context, String url) {
 //        context.startActivity(new Intent(context, VideoViewerActivity.class).putExtra("url", url));
 //    }

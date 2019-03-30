@@ -1,4 +1,4 @@
-package com.shxhzhxx.sdk.activity;
+package com.shxhzhxx.sdk.activity
 
 //import android.annotation.SuppressLint;
 //import android.app.DownloadManager;
@@ -15,7 +15,7 @@ package com.shxhzhxx.sdk.activity;
 //
 //import java.util.HashMap;
 
-public abstract class DownloadActivity extends MultimediaActivity {
+//public abstract class DownloadActivity extends MultimediaActivity {
 //    public abstract class DownloadListener {
 //        public void onResult(Uri uri) {
 //        }
@@ -166,4 +166,4 @@ public abstract class DownloadActivity extends MultimediaActivity {
 //        }
 //        return bytesAndStatus;
 //    }
-}
+//}

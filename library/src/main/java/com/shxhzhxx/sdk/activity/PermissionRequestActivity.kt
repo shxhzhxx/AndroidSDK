@@ -67,7 +67,7 @@ abstract class PermissionRequestActivity : CoroutineActivity() {
     /**
      * 申请权限结果的回调
      */
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
+    final override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
         val callback = permissionCallbacks.remove(requestCode)!!
         // If request is cancelled, the result arrays are empty.
         if (grantResults.isEmpty() || grantResults.size != permissions.size) {

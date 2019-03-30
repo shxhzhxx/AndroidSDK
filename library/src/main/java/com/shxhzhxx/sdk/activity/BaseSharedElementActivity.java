@@ -23,7 +23,7 @@ package com.shxhzhxx.sdk.activity;
 // * 接下来需要研究一下如何用注解来自动生成代码。
 // *
 // */
-public abstract class BaseSharedElementActivity extends BaseActivity {
+public abstract class BaseSharedElementActivity extends ForResultActivity {
 //    private boolean mTransitionEnd = true, mNullTransitionException = false;
 //    private Runnable mRunAfterTran = null;
 //
