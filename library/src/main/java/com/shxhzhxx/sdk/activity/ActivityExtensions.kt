@@ -5,14 +5,14 @@ import java.lang.ref.WeakReference
 
 private val activities = mutableListOf<WeakReference<Activity>>()
 
-fun addActivity(activity: Activity) {
-    if (activities.none { it.get() == activity }) {
-        activities.add(WeakReference(activity))
+fun Activity.addActivity() {
+    if (activities.none { it.get() == this }) {
+        activities.add(WeakReference(this))
     }
 }
 
-fun removeActivity(activity: Activity) {
-    activities.removeAll { it.get() == null || it.get() == activity }
+fun Activity.removeActivity() {
+    activities.removeAll { it.get() == null || it.get() == this }
 }
 
 fun lastActivity() = activities.findLast { it.get() != null }?.get()

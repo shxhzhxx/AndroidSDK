@@ -1,19 +1,69 @@
 package com.shxhzhxx.sdk.activity
 
-//import android.annotation.SuppressLint;
-//import android.app.DownloadManager;
-//import android.content.BroadcastReceiver;
-//import android.content.Context;
-//import android.content.Intent;
-//import android.content.IntentFilter;
-//import android.database.Cursor;
-//import android.net.Uri;
-//import android.os.Build;
-//import android.provider.Settings;
-//
-//import com.shxhzhxx.sdk.utils.FileUtils;
-//
-//import java.util.HashMap;
+import android.app.DownloadManager
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.net.Uri
+import android.os.Environment
+import android.util.Log
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlin.coroutines.resume
+
+abstract class DownloadActivity : ForResultActivity() {
+    private val downloadManager by lazy { getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager }
+    private val listeners by lazy { HashMap<Long, (Uri?) -> Unit>() }
+    private var receiver: BroadcastReceiver? = null
+
+    override fun onDestroy() {
+        super.onDestroy()
+        receiver?.let { unregisterReceiver(it) }
+    }
+
+    suspend fun downloadCoroutine(url: String, name: String = url.takeLastWhile { it != '/' }): Uri? {
+        var id: Long? = null
+        return try {
+            suspendCancellableCoroutine { cancellableContinuation ->
+                id = download(url, name, listener = {
+                    cancellableContinuation.resume(it)
+                })
+            }
+        } catch (e: CancellationException) {
+            id?.let { downloadManager.remove(it) }
+            null
+        }
+    }
+
+
+    fun download(url: String, name: String = url.takeLastWhile { it != '/' }, listener: (Uri?) -> Unit = {}): Long {
+        receiver = receiver ?: object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                val id = intent?.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1) ?: -1
+                val uri: Uri? = downloadManager.getUriForDownloadedFile(id)
+                listeners.remove(id)!!(uri)
+            }
+        }.also { registerReceiver(it, IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE)) }
+
+        val req = DownloadManager.Request(Uri.parse(url))
+        req.setDestinationInExternalFilesDir(this, Environment.DIRECTORY_DOWNLOADS, name)
+        val id = downloadManager.enqueue(req)
+        listeners[id] = listener
+        return id
+    }
+}
+
+fun ForResultActivity.promptInstall(uri: Uri) {
+    launch {
+        val (resultCode, data) = startActivityForResultCoroutine(Intent(Intent.ACTION_INSTALL_PACKAGE).also { intent ->
+            intent.setDataAndType(uri, "application/vnd.android.package-archive")
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            intent.putExtra(Intent.EXTRA_RETURN_RESULT, true)
+        })
+    }
+}
 
 //public abstract class DownloadActivity extends MultimediaActivity {
 //    public abstract class DownloadListener {
@@ -131,7 +181,7 @@ package com.shxhzhxx.sdk.activity
 //                    }
 //                }
 //            });
-//            return;
+//            return;x
 //        }
 //        Intent intent = new Intent(Intent.ACTION_VIEW);
 //        // FLAG_ACTIVITY_NEW_TASK 可以保证安装成功时可以正常打开 app

@@ -1,6 +1,11 @@
 package com.shxhzhxx.sdk.activity
 
+import android.app.Activity
+import android.graphics.Color
+import android.os.Build
 import android.os.Bundle
+import android.view.View
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -14,37 +19,28 @@ abstract class CoroutineActivity : AppCompatActivity(), CoroutineScope {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        addActivity(this)
+        addActivity()
     }
+
     override fun onDestroy() {
         super.onDestroy()
         job.cancel()
-        removeActivity(this)
+        removeActivity()
     }
 }
 
-//    protected void setStatusBarColor(int color, boolean lightStatusBar) {
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-//            Window window = getWindow();
-//            int visibility = View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN;
-//            if (lightStatusBar) {
-//                visibility |= View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
-//            }
-//            window.getDecorView().setSystemUiVisibility(visibility);
-//            window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
-//            window.setStatusBarColor(color);
-//        }
-//    }
-//
-//    /**
-//     * 这种全屏模式是隐藏状态栏的。
-//     * <p>
-//     * 如果想要布局与状态栏重叠，可以使用{@link #setStatusBarColor(int, boolean)}，
-//     * 第一个参数传{@link android.graphics.Color#TRANSPARENT}，第二个参数根据布局颜色确定；
-//     * 布局根视图设置{@link View#setFitsSystemWindows(boolean)}为false（默认属性）。
-//     */
-//    protected void fullscreen() {
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
-//            getWindow().addFlags(View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
-//        }
-//    }
+@RequiresApi(Build.VERSION_CODES.M)
+fun Activity.setStatusBarColor(color: Int, lightStatusBar: Boolean = true) {
+    window.statusBarColor = color
+    window.decorView.systemUiVisibility = if (lightStatusBar) View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR else View.SYSTEM_UI_FLAG_VISIBLE
+}
+
+@RequiresApi(Build.VERSION_CODES.M)
+fun Activity.fullscreen(hideStatusBar: Boolean = false, lightStatusBar: Boolean = false) {
+    if (hideStatusBar) {
+        window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_FULLSCREEN
+    } else {
+        window.statusBarColor = Color.TRANSPARENT
+        window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or (if (lightStatusBar) View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR else View.SYSTEM_UI_FLAG_VISIBLE)
+    }
+}

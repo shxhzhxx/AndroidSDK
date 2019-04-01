@@ -11,12 +11,13 @@ import android.provider.MediaStore
 import androidx.core.content.FileProvider
 import com.shxhzhxx.sdk.imageLoader
 import com.yalantis.ucrop.UCrop
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import java.io.File
 import java.io.IOException
 import java.util.*
 import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
 
 enum class DocumentType(val value: String) {
     VIDEO("video/*"),
@@ -29,7 +30,11 @@ data class MediaSource(val uri: Uri, val file: File)
 infix fun Uri.to(that: File): MediaSource = MediaSource(this, that)
 
 suspend fun ForResultActivity.openDocumentCoroutine(type: DocumentType = DocumentType.IMAGE): Uri? =
-        suspendCoroutine { continuation -> openDocument(type, onOpened = { continuation.resume(it) }, onFailed = { continuation.resume(null) }) }
+        try {
+            suspendCancellableCoroutine { continuation -> openDocument(type, onOpened = { continuation.resume(it) }, onFailed = { continuation.resume(null) }) }
+        } catch (e: CancellationException) {
+            null
+        }
 
 fun ForResultActivity.openDocument(type: DocumentType = DocumentType.IMAGE, onOpened: (Uri) -> Unit, onFailed: (() -> Unit) = {}) {
     launch {
@@ -73,14 +78,14 @@ fun ForResultActivity.takePicture(onTaken: (Uri, File) -> Unit, onFailed: (() ->
         }
         val file = createPictureFile() ?: run { onFailed(); return@launch }
         val uri = getUriForFile(file)
-        val (resultCode, _) = startActivityForResultCoroutine(
+        val resultCode = startActivityForResultCoroutine(
                 Intent(MediaStore.ACTION_IMAGE_CAPTURE).also { intent ->
                     intent.putExtra(MediaStore.EXTRA_OUTPUT, uri)
                     if (intent.resolveActivity(packageManager) == null) {
                         onFailed()
                         return@launch
                     }
-                })
+                }).resultCode
         if (resultCode == Activity.RESULT_OK) {
             onTaken(uri, file)
         } else {
@@ -90,7 +95,13 @@ fun ForResultActivity.takePicture(onTaken: (Uri, File) -> Unit, onFailed: (() ->
 }
 
 suspend fun ForResultActivity.takePictureCoroutine(): MediaSource? =
-        suspendCoroutine { continuation -> takePicture(onTaken = { uri, file -> continuation.resume(uri to file) }, onFailed = { continuation.resume(null) }) }
+        try {
+            suspendCancellableCoroutine { cancellableContinuation ->
+                takePicture(onTaken = { uri, file -> cancellableContinuation.resume(uri to file) }, onFailed = { cancellableContinuation.resume(null) })
+            }
+        } catch (e: CancellationException) {
+            null
+        }
 
 fun Context.getUriForFile(file: File): Uri = FileProvider.getUriForFile(this, "$packageName.FileProvider", file)
 
@@ -123,7 +134,11 @@ fun ForResultActivity.takeVideo(onTaken: (Uri) -> Unit, onFailed: (() -> Unit) =
 }
 
 suspend fun ForResultActivity.takeVideoCoroutine(): Uri? =
-        suspendCoroutine { continuation -> takeVideo(onTaken = { continuation.resume(it) }, onFailed = { continuation.resume(null) }) }
+        try {
+            suspendCancellableCoroutine { continuation -> takeVideo(onTaken = { continuation.resume(it) }, onFailed = { continuation.resume(null) }) }
+        } catch (e: CancellationException) {
+            null
+        }
 
 fun ForResultActivity.cropPicture(picture: Uri?, aspectX: Float, aspectY: Float, onCropped: (Uri, File) -> Unit,
                                   maxWidth: Int = Int.MAX_VALUE, maxHeight: Int = Int.MAX_VALUE, onFailed: (() -> Unit) = {}) {
@@ -137,8 +152,7 @@ fun ForResultActivity.cropPicture(picture: Uri?, aspectX: Float, aspectY: Float,
             onFailed()
             return@launch
         }
-        val (resultCode, _) = startActivityForResultCoroutine(intent)
-        if (resultCode == Activity.RESULT_OK) {
+        if (startActivityForResultCoroutine(intent).resultCode == Activity.RESULT_OK) {
             onCropped(uri, file)
         } else {
             onFailed()
@@ -146,5 +160,13 @@ fun ForResultActivity.cropPicture(picture: Uri?, aspectX: Float, aspectY: Float,
     }
 }
 
-suspend fun ForResultActivity.cropPictureCoroutine(picture: Uri?, aspectX: Float, aspectY: Float, maxWidth: Int = Int.MAX_VALUE, maxHeight: Int = Int.MAX_VALUE): MediaSource? =
-        suspendCoroutine { continuation -> cropPicture(picture, aspectX, aspectY, maxWidth = maxWidth, maxHeight = maxHeight, onCropped = { uri, file -> continuation.resume(uri to file) }, onFailed = { continuation.resume(null) }) }
+suspend fun ForResultActivity.cropPictureCoroutine(picture: Uri?, aspectX: Float, aspectY: Float,
+                                                   maxWidth: Int = Int.MAX_VALUE, maxHeight: Int = Int.MAX_VALUE): MediaSource? =
+        try {
+            suspendCancellableCoroutine { continuation ->
+                cropPicture(picture, aspectX, aspectY, maxWidth = maxWidth, maxHeight = maxHeight,
+                        onCropped = { uri, file -> continuation.resume(uri to file) }, onFailed = { continuation.resume(null) })
+            }
+        } catch (e: CancellationException) {
+            null
+        }

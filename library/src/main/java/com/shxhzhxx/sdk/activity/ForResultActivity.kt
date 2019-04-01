@@ -1,10 +1,15 @@
 package com.shxhzhxx.sdk.activity
 
+import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
 
+data class ActivityResult(val resultCode: Int, val data: Intent?)
+
+infix fun Int.to(that: Intent?): ActivityResult = ActivityResult(this, that)
 abstract class ForResultActivity : PermissionRequestActivity() {
     private var resultCallbacks = HashMap<Int, (Int, Intent?) -> Unit>()
 
@@ -14,9 +19,13 @@ abstract class ForResultActivity : PermissionRequestActivity() {
         startActivityForResult(intent, requestCode)
     }
 
-    suspend fun startActivityForResultCoroutine(intent: Intent): Pair<Int, Intent?> =
-            suspendCoroutine { continuation ->
-                startActivityForResult(intent) { resultCode, data -> continuation.resume(resultCode to data) }
+    suspend fun startActivityForResultCoroutine(intent: Intent): ActivityResult =
+            try {
+                suspendCancellableCoroutine { continuation ->
+                    startActivityForResult(intent) { resultCode, data -> continuation.resume(resultCode to data) }
+                }
+            } catch (e: CancellationException) {
+                Activity.RESULT_CANCELED to null
             }
 
     final override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {

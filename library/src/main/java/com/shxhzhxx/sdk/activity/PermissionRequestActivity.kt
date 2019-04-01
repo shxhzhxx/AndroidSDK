@@ -2,8 +2,9 @@ package com.shxhzhxx.sdk.activity
 
 import android.content.pm.PackageManager
 import android.os.Build
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
 
 private class Holder(
         val onGranted: () -> Unit,
@@ -45,11 +46,15 @@ abstract class PermissionRequestActivity : CoroutineActivity() {
     }
 
     suspend fun requestPermissionsCoroutine(permissions: List<String>, onShouldExplain: (explainPermissions: List<String>, continuation: (accepted: Boolean) -> Unit) -> Unit = { _, continuation -> continuation(true) }): Boolean =
-            suspendCoroutine { continuation ->
-                requestPermissions(permissions,
-                        { continuation.resume(true) },
-                        { continuation.resume(false) },
-                        { continuation.resume(false) }, onShouldExplain)
+            try {
+                suspendCancellableCoroutine { continuation ->
+                    requestPermissions(permissions,
+                            { continuation.resume(true) },
+                            { continuation.resume(false) },
+                            { continuation.resume(false) }, onShouldExplain)
+                }
+            } catch (e: CancellationException) {
+                false
             }
 
 
