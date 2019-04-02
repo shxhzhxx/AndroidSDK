@@ -7,15 +7,17 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.net.Uri
 import android.os.Environment
-import android.util.Log
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 
 abstract class DownloadActivity : ForResultActivity() {
+    private class Holder(val onLoad: ((Uri) -> Unit)?, val onFailure: (() -> Unit)?)
+
     private val downloadManager by lazy { getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager }
-    private val listeners by lazy { HashMap<Long, (Uri?) -> Unit>() }
+    private val listeners by lazy { HashMap<Long, Holder>() }
     private var receiver: BroadcastReceiver? = null
 
     override fun onDestroy() {
@@ -23,45 +25,56 @@ abstract class DownloadActivity : ForResultActivity() {
         receiver?.let { unregisterReceiver(it) }
     }
 
-    suspend fun downloadCoroutine(url: String, name: String = url.takeLastWhile { it != '/' }): Uri? {
+    suspend fun downloadCoroutine(url: String, name: String = url.takeLastWhile { it != '/' }, onFailure: (() -> Unit)? = null): Uri {
         var id: Long? = null
         return try {
-            suspendCancellableCoroutine { cancellableContinuation ->
-                id = download(url, name, listener = {
-                    cancellableContinuation.resume(it)
-                })
+            suspendCancellableCoroutine { continuation ->
+                id = download(url, name, onLoad = { continuation.resume(it) }, onFailure = { id = null;continuation.resumeWithException(CancellationException()) })
             }
         } catch (e: CancellationException) {
             id?.let { downloadManager.remove(it) }
-            null
+            onFailure?.invoke()
+            throw e
         }
     }
 
-
-    fun download(url: String, name: String = url.takeLastWhile { it != '/' }, listener: (Uri?) -> Unit = {}): Long {
+    fun download(url: String, name: String = url.takeLastWhile { it != '/' }, onLoad: ((Uri) -> Unit)? = null, onFailure: (() -> Unit)? = null): Long {
         receiver = receiver ?: object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
                 val id = intent?.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1) ?: -1
-                val uri: Uri? = downloadManager.getUriForDownloadedFile(id)
-                listeners.remove(id)!!(uri)
+                val uri: Uri = downloadManager.getUriForDownloadedFile(id)
+                        ?: run { listeners.remove(id)!!.onFailure?.invoke();return }
+                listeners.remove(id)!!.onLoad?.invoke(uri)
             }
         }.also { registerReceiver(it, IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE)) }
 
         val req = DownloadManager.Request(Uri.parse(url))
         req.setDestinationInExternalFilesDir(this, Environment.DIRECTORY_DOWNLOADS, name)
         val id = downloadManager.enqueue(req)
-        listeners[id] = listener
+        listeners[id] = Holder(onLoad, onFailure)
         return id
     }
 }
 
-fun ForResultActivity.promptInstall(uri: Uri) {
+fun ForResultActivity.promptInstall(uri: Uri, onInstall: (() -> Unit)? = null, onFailure: (() -> Unit)? = null) {
     launch {
-        val (resultCode, data) = startActivityForResultCoroutine(Intent(Intent.ACTION_INSTALL_PACKAGE).also { intent ->
+        startActivityForResultCoroutine(Intent(Intent.ACTION_INSTALL_PACKAGE).also { intent ->
             intent.setDataAndType(uri, "application/vnd.android.package-archive")
             intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             intent.putExtra(Intent.EXTRA_RETURN_RESULT, true)
-        })
+        }, onFailure)
+        onInstall?.invoke()
+    }
+}
+
+suspend fun ForResultActivity.promptInstallCoroutine(uri: Uri, onFailure: (() -> Unit)? = null) {
+    try {
+        suspendCancellableCoroutine<Unit> { continuation ->
+            promptInstall(uri, onInstall = { continuation.resume(Unit) }, onFailure = { continuation.resumeWithException(CancellationException()) })
+        }
+    } catch (e: CancellationException) {
+        onFailure?.invoke()
+        throw e
     }
 }
 

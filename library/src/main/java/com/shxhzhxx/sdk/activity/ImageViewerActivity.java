@@ -107,7 +107,7 @@ public class ImageViewerActivity /*extends BaseActivity implements View.OnLongCl
 //                        }
 //
 //                        @Override
-//                        public void onCanceled() {
+//                        public void onCancel() {
 //                            supportStartPostponedEnterTransition();
 //                        }
 //                    }).into(view);

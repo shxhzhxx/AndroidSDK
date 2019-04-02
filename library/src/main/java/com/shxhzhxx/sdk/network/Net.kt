@@ -118,7 +118,7 @@ class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: String
     }
 
     private inner class Worker(key: Any, private val request: Request) : Task(key) {
-        override fun onCanceled() {
+        override fun onCancel() {
             observers.forEach { it?.invoke(CODE_CANCELED, getMsg(CODE_CANCELED), null) }
         }
 
