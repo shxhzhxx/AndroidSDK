@@ -6,6 +6,9 @@ import android.util.Log
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.OnLifecycleEvent
+import com.google.gson.Gson
+import com.google.gson.JsonParseException
+import com.google.gson.reflect.TypeToken
 import com.shxhzhxx.sdk.R
 import com.shxhzhxx.urlloader.TaskManager
 import okhttp3.*
@@ -27,11 +30,11 @@ const val CODE_UNEXPECTED_RESPONSE = -4
 const val CODE_CANCELED = -5
 const val CODE_MULTIPLE_REQUEST = -6
 
-private val DATA_TYPE_FORM = MediaType.parse("application/x-www-form-urlencoded;charset=utf-8")//form表单
-private val DATA_TYPE_FILE = MediaType.parse("application/octet-stream")
-private val DATA_TYPE_JSON = MediaType.parse("application/json;charset=utf-8")
+val DATA_TYPE_FORM = MediaType.parse("application/x-www-form-urlencoded;charset=utf-8")//form表单
+val DATA_TYPE_FILE = MediaType.parse("application/octet-stream")
+val DATA_TYPE_JSON = MediaType.parse("application/json;charset=utf-8")
 
-class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: String?) -> Unit, Unit>() {
+class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: Any?) -> Unit, Unit>() {
     private val codeMsg = mapOf(
             CODE_OK to context.resources.getString(R.string.err_msg_ok),
             CODE_NO_AVAILABLE_NETWORK to context.resources.getString(R.string.err_msg_no_available_network),
@@ -55,8 +58,8 @@ class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: String
 
     fun getMsg(errno: Int, defValue: String = defaultErrorMessage) = codeMsg[errno] ?: defValue
 
-    fun request(key: Any, request: Request, lifecycle: Lifecycle? = null,
-                onResult: ((errno: Int, msg: String, data: String?) -> Unit)? = null) {
+    fun <T> request(key: Any, request: Request, typeToken: TypeToken<T>, lifecycle: Lifecycle? = null,
+                    onResult: ((errno: Int, msg: String, data: Any?) -> Unit)? = null) {
         if (isRunning(key)) {
             onResult?.invoke(CODE_MULTIPLE_REQUEST, getMsg(CODE_MULTIPLE_REQUEST), null)
             return
@@ -71,12 +74,19 @@ class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: String
                 }
             })
         }
-        asyncStart(key, { Worker(key, request) }, lifecycle, onResult)
+        asyncStart(key, { Worker(key, request, typeToken) }, lifecycle, onResult)
     }
 
-    fun postForm(url: String, key: Any, lifecycle: Lifecycle? = null, onParams: ((params: JSONObject) -> JSONObject)? = null,
-                 onResult: ((errno: Int, msg: String, data: String?) -> Unit)? = null) {
-        request(key, Request.Builder().also { builder ->
+    inline fun <reified T> inlineRequest(key: Any, request: Request, lifecycle: Lifecycle? = null,
+                                         noinline onResult: ((errno: Int, msg: String, data: T?) -> Unit)? = null) {
+        request(key, request, object : TypeToken<T>() {}, lifecycle) { errno, msg, data ->
+            onResult?.invoke(errno, msg, data as? T)
+        }
+    }
+
+    inline fun <reified T> postForm(url: String, key: Any, lifecycle: Lifecycle? = null, noinline onParams: ((params: JSONObject) -> JSONObject)? = null,
+                                    noinline onResult: ((errno: Int, msg: String, data: T?) -> Unit)? = null) {
+        inlineRequest(key, Request.Builder().also { builder ->
             builder.url(url)
             onParams?.invoke(JSONObject())?.let { params ->
                 if (params.length() > 0) {
@@ -86,9 +96,9 @@ class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: String
         }.build(), lifecycle, onResult)
     }
 
-    fun postJson(url: String, key: Any, lifecycle: Lifecycle? = null, onParams: ((params: JSONObject) -> JSONObject)? = null,
-                 onResult: ((errno: Int, msg: String, data: String?) -> Unit)? = null) {
-        request(key, Request.Builder().also { builder ->
+    inline fun <reified T> postJson(url: String, key: Any, lifecycle: Lifecycle? = null, noinline onParams: ((params: JSONObject) -> JSONObject)? = null,
+                                    noinline onResult: ((errno: Int, msg: String, data: T?) -> Unit)? = null) {
+        inlineRequest(key, Request.Builder().also { builder ->
             builder.url(url)
             onParams?.invoke(JSONObject())?.let { params ->
                 if (params.length() > 0) {
@@ -98,13 +108,13 @@ class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: String
         }.build(), lifecycle, onResult)
     }
 
-    fun postFile(url: String, key: Any, lifecycle: Lifecycle? = null, file: File,
-                 onResult: ((errno: Int, msg: String, data: String?) -> Unit)? = null) {
-        request(key, Request.Builder().url(url).post(RequestBody.create(DATA_TYPE_FILE, file)).build(), lifecycle, onResult)
+    inline fun <reified T> postFile(url: String, key: Any, lifecycle: Lifecycle? = null, file: File,
+                                    noinline onResult: ((errno: Int, msg: String, data: T?) -> Unit)? = null) {
+        inlineRequest(key, Request.Builder().url(url).post(RequestBody.create(DATA_TYPE_FILE, file)).build(), lifecycle, onResult)
     }
 
-    fun postMultipartForm(url: String, key: Any, lifecycle: Lifecycle? = null, files: List<Pair<String, File>> = emptyList(),
-                          onParams: ((params: JSONObject) -> JSONObject)? = null, onResult: ((errno: Int, msg: String, data: String?) -> Unit)? = null) {
+    inline fun <reified T> postMultipartForm(url: String, key: Any, lifecycle: Lifecycle? = null, files: List<Pair<String, File>> = emptyList(),
+                                             noinline onParams: ((params: JSONObject) -> JSONObject)? = null, noinline onResult: ((errno: Int, msg: String, data: T?) -> Unit)? = null) {
         val builder = MultipartBody.Builder().setType(MultipartBody.FORM)
         for ((name, file) in files) {
             builder.addFormDataPart(name, file.name, RequestBody.create(DATA_TYPE_FILE, file))
@@ -114,15 +124,15 @@ class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: String
                 builder.addFormDataPart(k, params.getString(k))
             }
         }
-        request(key, Request.Builder().url(url).post(builder.build()).build(), lifecycle, onResult)
+        inlineRequest(key, Request.Builder().url(url).post(builder.build()).build(), lifecycle, onResult)
     }
 
-    private inner class Worker(key: Any, private val request: Request) : Task(key) {
+    protected inner class Worker<T>(key: Any, private val request: Request, private val typeToken: TypeToken<T>) : Task(key) {
         override fun onCancel() {
             observers.forEach { it?.invoke(CODE_CANCELED, getMsg(CODE_CANCELED), null) }
         }
 
-        override fun onObserverUnregistered(observer: ((errno: Int, msg: String, data: String?) -> Unit)?) {
+        override fun onObserverUnregistered(observer: ((errno: Int, msg: String, data: Any?) -> Unit)?) {
             observer?.invoke(CODE_CANCELED, getMsg(CODE_CANCELED), null)
         }
 
@@ -142,10 +152,13 @@ class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: String
                 }
                 val body = response.body()!!
                 try {
-                    return@run CODE_OK to body.string()
+                    return@run CODE_OK to Gson().fromJson<T>(body.string(), typeToken.type)
                 } catch (e: IOException) {
                     Log.e(TAG, "read string IOException: ${e.message}")
                     return@run (if (isNetworkAvailable) CODE_TIMEOUT else CODE_NO_AVAILABLE_NETWORK) to null
+                } catch (e: JsonParseException) {
+                    Log.e(TAG, "JsonParseException: ${e.message}")
+                    return@run CODE_UNEXPECTED_RESPONSE to null
                 } finally {
                     body.close()
                 }
