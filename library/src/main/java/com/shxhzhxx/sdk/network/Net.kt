@@ -9,8 +9,11 @@ import androidx.lifecycle.OnLifecycleEvent
 import com.google.gson.Gson
 import com.google.gson.JsonParseException
 import com.google.gson.reflect.TypeToken
+import com.shxhzhxx.sdk.BuildConfig
 import com.shxhzhxx.sdk.R
 import com.shxhzhxx.urlloader.TaskManager
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.suspendCancellableCoroutine
 import okhttp3.*
 import org.json.JSONException
 import org.json.JSONObject
@@ -20,6 +23,8 @@ import java.io.UnsupportedEncodingException
 import java.net.URLEncoder
 import java.util.*
 import java.util.concurrent.TimeUnit
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 
 const val TAG = "Net"
 const val CODE_OK = 0
@@ -30,9 +35,15 @@ const val CODE_UNEXPECTED_RESPONSE = -4
 const val CODE_CANCELED = -5
 const val CODE_MULTIPLE_REQUEST = -6
 
-val DATA_TYPE_FORM = MediaType.parse("application/x-www-form-urlencoded;charset=utf-8")//form表单
+val DATA_TYPE_FORM = MediaType.parse("application/x-www-form-urlencoded;charset=utf-8")
 val DATA_TYPE_FILE = MediaType.parse("application/octet-stream")
 val DATA_TYPE_JSON = MediaType.parse("application/json;charset=utf-8")
+
+enum class PostType {
+    FORM, JSON
+}
+
+class InternalCancellationException(val errno: Int, val msg: String) : CancellationException()
 
 class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: Any?) -> Unit, Unit>() {
     private val codeMsg = mapOf(
@@ -52,6 +63,7 @@ class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: Any?) 
             .connectTimeout(5, TimeUnit.SECONDS)
             .build()
     private val lifecycleSet = HashSet<Lifecycle>()
+    var defaultParams = JSONObject()
 
     val isNetworkAvailable get() = connMgr.activeNetworkInfo?.isConnected == true
     val isWifiAvailable get() = isNetworkAvailable && connMgr.activeNetworkInfo.type == ConnectivityManager.TYPE_WIFI
@@ -78,43 +90,74 @@ class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: Any?) 
     }
 
     inline fun <reified T> inlineRequest(key: Any, request: Request, lifecycle: Lifecycle? = null,
-                                         noinline onResult: ((errno: Int, msg: String, data: T?) -> Unit)? = null) {
+                                         noinline onResponse: ((data: T) -> Unit)? = null,
+                                         noinline onFailure: ((errno: Int, msg: String) -> Unit)? = null) {
         request(key, request, object : TypeToken<T>() {}, lifecycle) { errno, msg, data ->
-            onResult?.invoke(errno, msg, data as? T)
+            if (errno == CODE_OK) {
+                if (data is T)
+                    onResponse?.invoke(data)
+                else
+                    onFailure?.invoke(CODE_UNEXPECTED_RESPONSE, getMsg(CODE_UNEXPECTED_RESPONSE))
+            } else {
+                onFailure?.invoke(errno, msg)
+            }
         }
     }
 
-    inline fun <reified T> postForm(url: String, key: Any, lifecycle: Lifecycle? = null, noinline onParams: ((params: JSONObject) -> JSONObject)? = null,
-                                    noinline onResult: ((errno: Int, msg: String, data: T?) -> Unit)? = null) {
+    inline fun <reified T> post(url: String, key: Any, params: JSONObject = defaultParams, lifecycle: Lifecycle? = null, postType: PostType = PostType.FORM,
+                                noinline onResponse: ((data: T) -> Unit)? = null,
+                                noinline onFailure: ((errno: Int, msg: String) -> Unit)? = null) {
+        if (params != defaultParams) {
+            for (k in defaultParams.keys()) {
+                if (!params.has(k)) params.put(k, defaultParams.get(k))
+            }
+        }
         inlineRequest(key, Request.Builder().also { builder ->
             builder.url(url)
-            onParams?.invoke(JSONObject())?.let { params ->
-                if (params.length() > 0) {
-                    builder.post(RequestBody.create(DATA_TYPE_FORM, formatJsonToForm(params)))
+            if (BuildConfig.DEBUG) {
+                Log.d(TAG, "$url request:")
+            }
+            if (params.length() > 0) {
+                when (postType) {
+                    PostType.FORM -> builder.post(RequestBody.create(DATA_TYPE_FORM, formatJsonToForm(params)))
+                    PostType.JSON -> builder.post(RequestBody.create(DATA_TYPE_JSON, params.toString()))
+                }
+                if (BuildConfig.DEBUG) {
+                    formatJsonString(params.toString()).split('\n').forEach { Log.d(TAG, it) }
                 }
             }
-        }.build(), lifecycle, onResult)
+        }.build(), lifecycle, onResponse, onFailure)
     }
 
-    inline fun <reified T> postJson(url: String, key: Any, lifecycle: Lifecycle? = null, noinline onParams: ((params: JSONObject) -> JSONObject)? = null,
-                                    noinline onResult: ((errno: Int, msg: String, data: T?) -> Unit)? = null) {
-        inlineRequest(key, Request.Builder().also { builder ->
-            builder.url(url)
-            onParams?.invoke(JSONObject())?.let { params ->
-                if (params.length() > 0) {
-                    builder.post(RequestBody.create(DATA_TYPE_JSON, params.toString()))
-                }
+    suspend inline fun <reified T> postCoroutine(url: String, key: Any, params: JSONObject = defaultParams, lifecycle: Lifecycle? = null, postType: PostType = PostType.FORM,
+                                                 noinline onFailure: ((errno: Int, msg: String) -> Unit)? = null): T {
+        var cancelRequest = false
+        return try {
+            suspendCancellableCoroutine { continuation ->
+                cancelRequest = true
+                post<T>(url, key, params, lifecycle, postType, onResponse = { cancelRequest = false;continuation.resume(it) },
+                        onFailure = { errno, msg -> cancelRequest = false;continuation.resumeWithException(InternalCancellationException(errno, msg)) })
             }
-        }.build(), lifecycle, onResult)
+        } catch (e: CancellationException) {
+            if (cancelRequest) cancel(key)
+            if (e is InternalCancellationException)
+                onFailure?.invoke(e.errno, e.msg)
+            else
+                onFailure?.invoke(CODE_CANCELED, getMsg(CODE_CANCELED))
+            throw e
+        }
     }
 
     inline fun <reified T> postFile(url: String, key: Any, lifecycle: Lifecycle? = null, file: File,
-                                    noinline onResult: ((errno: Int, msg: String, data: T?) -> Unit)? = null) {
-        inlineRequest(key, Request.Builder().url(url).post(RequestBody.create(DATA_TYPE_FILE, file)).build(), lifecycle, onResult)
+                                    noinline onResponse: ((data: T) -> Unit)? = null,
+                                    noinline onFailure: ((errno: Int, msg: String) -> Unit)? = null) {
+        inlineRequest(key, Request.Builder().url(url).post(RequestBody.create(DATA_TYPE_FILE, file)).build(), lifecycle, onResponse, onFailure)
     }
 
     inline fun <reified T> postMultipartForm(url: String, key: Any, lifecycle: Lifecycle? = null, files: List<Pair<String, File>> = emptyList(),
-                                             noinline onParams: ((params: JSONObject) -> JSONObject)? = null, noinline onResult: ((errno: Int, msg: String, data: T?) -> Unit)? = null) {
+                                             noinline onParams: ((params: JSONObject) -> JSONObject)? = null,
+                                             noinline onResponse: ((data: T) -> Unit)? = null,
+                                             noinline onFailure: ((errno: Int, msg: String) -> Unit)? = null) {
         val builder = MultipartBody.Builder().setType(MultipartBody.FORM)
         for ((name, file) in files) {
             builder.addFormDataPart(name, file.name, RequestBody.create(DATA_TYPE_FILE, file))
@@ -124,10 +167,10 @@ class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: Any?) 
                 builder.addFormDataPart(k, params.getString(k))
             }
         }
-        inlineRequest(key, Request.Builder().url(url).post(builder.build()).build(), lifecycle, onResult)
+        inlineRequest(key, Request.Builder().url(url).post(builder.build()).build(), lifecycle, onResponse, onFailure)
     }
 
-    protected inner class Worker<T>(key: Any, private val request: Request, private val typeToken: TypeToken<T>) : Task(key) {
+    private inner class Worker<T>(key: Any, private val request: Request, private val typeToken: TypeToken<T>) : Task(key) {
         override fun onCancel() {
             observers.forEach { it?.invoke(CODE_CANCELED, getMsg(CODE_CANCELED), null) }
         }
@@ -151,16 +194,34 @@ class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: Any?) 
                     return@run CODE_UNEXPECTED_RESPONSE to null
                 }
                 val body = response.body()!!
-                try {
-                    return@run CODE_OK to Gson().fromJson<T>(body.string(), typeToken.type)
+                val raw = try {
+                    body.string()
                 } catch (e: IOException) {
                     Log.e(TAG, "read string IOException: ${e.message}")
                     return@run (if (isNetworkAvailable) CODE_TIMEOUT else CODE_NO_AVAILABLE_NETWORK) to null
-                } catch (e: JsonParseException) {
-                    Log.e(TAG, "JsonParseException: ${e.message}")
-                    return@run CODE_UNEXPECTED_RESPONSE to null
                 } finally {
                     body.close()
+                }
+                if (typeToken.type == String::class.java) {
+                    if (BuildConfig.DEBUG) {
+                        Log.d(TAG, "${request.url()} raw response:\n$raw")
+                    }
+                    return@run CODE_OK to raw
+                }
+                try {
+                    return@run CODE_OK to Gson().fromJson<T>(raw, typeToken.type)
+                            .also {
+                                if (BuildConfig.DEBUG) {
+                                    Log.d(TAG, "${request.url()} response:")
+                                    formatJsonString(raw).split('\n').forEach { Log.d(TAG, it) }
+                                }
+                            }
+                } catch (e: JsonParseException) {
+                    Log.e(TAG, "JsonParseException: ${e.message}")
+                    if (BuildConfig.DEBUG) {
+                        Log.e(TAG, "${request.url()} raw response:\n$raw")
+                    }
+                    return@run CODE_UNEXPECTED_RESPONSE to null
                 }
             }
             postResult = Runnable {

@@ -10,6 +10,7 @@ import com.shxhzhxx.sdk.utils.FileUtils
 import com.shxhzhxx.sdk.utils.initParams
 import com.shxhzhxx.sdk.utils.initRes
 import com.shxhzhxx.sdk.utils.initToast
+import org.json.JSONObject
 
 
 lateinit var imageLoader: ImageLoader private set

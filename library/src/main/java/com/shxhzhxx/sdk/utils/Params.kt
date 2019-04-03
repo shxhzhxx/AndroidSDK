@@ -10,7 +10,7 @@ fun initParams(context: Context) {
     sharedPreferences = context.getSharedPreferences("${context.packageName}_AndroidSdk", Context.MODE_PRIVATE)
 }
 
-fun <T> saveParam(key: Param<T>, value: T) {
+inline fun <reified T> saveParam(key: Param<T>, value: T) {
     sharedPreferences.edit().apply {
         when (value) {
             is String -> putString(key.name, value)
@@ -18,18 +18,20 @@ fun <T> saveParam(key: Param<T>, value: T) {
             is Boolean -> putBoolean(key.name, value)
             is Long -> putLong(key.name, value)
             is Float -> putFloat(key.name, value)
-            else -> throw IllegalArgumentException("Invalid param type:${key.type}")
+            else -> throw IllegalArgumentException("Invalid param type: ${T::class.java.name}")
         }
     }.apply()
 }
 
-inline fun <reified T> getParam(key: Param<T>) = when (key.defVal) {
-    is String -> sharedPreferences.getString(key.name, key.defVal) as T
-    is Int -> sharedPreferences.getInt(key.name, key.defVal) as T
-    is Boolean -> sharedPreferences.getBoolean(key.name, key.defVal) as T
-    is Long -> sharedPreferences.getLong(key.name, key.defVal) as T
-    is Float -> sharedPreferences.getFloat(key.name, key.defVal) as T
-    else -> throw IllegalArgumentException("Invalid param type:${key.type}")
+inline fun <reified T> getParam(key: Param<T>) = sharedPreferences.run {
+    return@run when (key.defVal) {
+        is String -> getString(key.name, key.defVal) as T
+        is Int -> getInt(key.name, key.defVal) as T
+        is Boolean -> getBoolean(key.name, key.defVal) as T
+        is Long -> getLong(key.name, key.defVal) as T
+        is Float -> getFloat(key.name, key.defVal) as T
+        else -> throw IllegalArgumentException("Invalid param type: ${T::class.java.name}")
+    }
 }
 
-class Param<T>(val name: String, val type: Class<T>, val defVal: T)
+class Param<T>(val name: String, val defVal: T)

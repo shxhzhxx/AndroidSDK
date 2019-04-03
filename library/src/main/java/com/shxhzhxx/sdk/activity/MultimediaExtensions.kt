@@ -18,7 +18,6 @@ import java.io.IOException
 import java.util.*
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
-import kotlin.coroutines.suspendCoroutine
 
 enum class DocumentType(val value: String) {
     VIDEO("video/*"),
