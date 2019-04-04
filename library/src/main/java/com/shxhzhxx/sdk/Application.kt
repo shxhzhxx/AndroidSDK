@@ -6,11 +6,9 @@ import android.content.Context
 import android.os.Build
 import com.shxhzhxx.imageloader.ImageLoader
 import com.shxhzhxx.sdk.network.Net
-import com.shxhzhxx.sdk.utils.FileUtils
 import com.shxhzhxx.sdk.utils.initParams
 import com.shxhzhxx.sdk.utils.initRes
 import com.shxhzhxx.sdk.utils.initToast
-import org.json.JSONObject
 
 
 lateinit var imageLoader: ImageLoader private set
@@ -37,7 +35,6 @@ open class Application : android.app.Application() {
         initParams(this)
         initToast(this)
         initRes(this)
-        FileUtils.init(this)
     }
 
     override fun onTrimMemory(level: Int) {

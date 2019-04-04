@@ -1,34 +1,5 @@
 package com.shxhzhxx.sdk.activity;
 
-import android.Manifest;
-import android.app.Activity;
-import android.app.ActivityOptions;
-import android.content.DialogInterface;
-import android.content.Intent;
-import android.graphics.Color;
-import android.os.Build;
-import android.os.Bundle;
-import android.os.Environment;
-import android.util.Pair;
-import android.view.View;
-import android.view.ViewGroup;
-
-import com.github.chrisbanes.photoview.PhotoView;
-import com.shxhzhxx.imageloader.ImageLoader;
-import com.shxhzhxx.sdk.R;
-import com.shxhzhxx.sdk.utils.FileUtils;
-import com.shxhzhxx.urlloader.UrlLoader;
-
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
-
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.appcompat.app.AlertDialog;
-import androidx.viewpager.widget.PagerAdapter;
-import androidx.viewpager.widget.ViewPager;
 
 /**
  * {@link com.shxhzhxx.sdk.ui.HolderRefAdapter} could help.

@@ -1,4 +1,4 @@
-package com.shxhzhxx.sdk.activity;
+package com.shxhzhxx.sdk.activity
 
 //import android.os.Build;
 //import android.os.Bundle;
@@ -23,7 +23,7 @@ package com.shxhzhxx.sdk.activity;
 // * 接下来需要研究一下如何用注解来自动生成代码。
 // *
 // */
-public abstract class BaseSharedElementActivity extends ForResultActivity {
+//public abstract class BaseSharedElementActivity extends ForResultActivity {
 //    private boolean mTransitionEnd = true, mNullTransitionException = false;
 //    private Runnable mRunAfterTran = null;
 //
@@ -92,4 +92,4 @@ public abstract class BaseSharedElementActivity extends ForResultActivity {
 //        super.supportPostponeEnterTransition();
 //        mTransitionEnd = false;
 //    }
-}
+//}

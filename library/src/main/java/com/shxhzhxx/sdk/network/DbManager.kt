@@ -1,6 +1,6 @@
-package com.shxhzhxx.sdk.network;
+package com.shxhzhxx.sdk.network
 
-public class DbManager {
+//public class DbManager {
 //    private static final String TAG = "DbManager";
 //
 //    public abstract static class Callback {
@@ -192,4 +192,4 @@ public class DbManager {
 //            });
 //        }
 //    }
-}
+//}

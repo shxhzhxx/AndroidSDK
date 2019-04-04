@@ -1,6 +1,6 @@
-package com.shxhzhxx.sdk.network;
+package com.shxhzhxx.sdk.network
 
-public class PushClient extends Thread {
+//public class PushClient extends Thread {
 //    enum State {
 //        INIT,
 //        CONNECTED,
@@ -185,4 +185,4 @@ public class PushClient extends Thread {
 //            throw new IOException();
 //        return buffer.getInt(4);
 //    }
-}
+//}

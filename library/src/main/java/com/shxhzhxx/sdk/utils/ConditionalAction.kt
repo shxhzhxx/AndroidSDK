@@ -2,7 +2,7 @@ package com.shxhzhxx.sdk.utils
 
 import androidx.annotation.IntRange
 
-class ConditionalAction(@IntRange(from = 1) size: Int, private val action: (invoker: Int) -> Unit) {
+class ConditionalAction(@IntRange(from = 1) size: Int, private val action: ConditionalAction.(invoker: Int) -> Unit) {
     private val conditions: BooleanArray = BooleanArray(size)
 
     operator fun set(index: Int, cond: Boolean) {

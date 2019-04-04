@@ -182,25 +182,22 @@ class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: Any?) 
         override fun doInBackground() {
             val call = okHttpClient.newCall(request)
             val (errno, data) = kotlin.run {
-                val response = try {
+                val raw = try {
                     call.execute()
                 } catch (e: IOException) {
                     Log.e(TAG, "execute IOException: ${e.message}")
                     return@run (if (isNetworkAvailable) CODE_TIMEOUT else CODE_NO_AVAILABLE_NETWORK) to null
-                }
-                if (!response.isSuccessful) {
-                    response.close()
-                    Log.e(TAG, "HTTP code ${response.code()}")
-                    return@run CODE_UNEXPECTED_RESPONSE to null
-                }
-                val body = response.body()!!
-                val raw = try {
-                    body.string()
-                } catch (e: IOException) {
-                    Log.e(TAG, "read string IOException: ${e.message}")
-                    return@run (if (isNetworkAvailable) CODE_TIMEOUT else CODE_NO_AVAILABLE_NETWORK) to null
-                } finally {
-                    body.close()
+                }.use { response ->
+                    if (!response.isSuccessful) {
+                        Log.e(TAG, "HTTP code ${response.code()}")
+                        return@run CODE_UNEXPECTED_RESPONSE to null
+                    }
+                    return@use try {
+                        response.body()!!.string()
+                    } catch (e: IOException) {
+                        Log.e(TAG, "read string IOException: ${e.message}")
+                        return@run (if (isNetworkAvailable) CODE_TIMEOUT else CODE_NO_AVAILABLE_NETWORK) to null
+                    }
                 }
                 if (typeToken.type == String::class.java) {
                     if (BuildConfig.DEBUG) {
