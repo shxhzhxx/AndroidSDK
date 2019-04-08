@@ -4,12 +4,21 @@ import android.content.Context
 import android.graphics.Matrix
 import android.graphics.SurfaceTexture
 import android.media.MediaPlayer
+import android.media.MediaPlayer.MEDIA_INFO_BUFFERING_END
+import android.media.MediaPlayer.MEDIA_INFO_BUFFERING_START
+import android.net.Uri
 import android.os.Build
 import android.text.format.DateUtils
 import android.util.AttributeSet
-import android.view.*
-import android.widget.FrameLayout
+import android.view.LayoutInflater
+import android.view.Surface
+import android.view.TextureView
+import android.view.View
 import android.widget.SeekBar
+import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleObserver
+import androidx.lifecycle.OnLifecycleEvent
 import com.shxhzhxx.sdk.R
 import com.shxhzhxx.sdk.utils.ConditionalAction
 import kotlinx.android.synthetic.main.video_viewer.view.*
@@ -21,8 +30,9 @@ private const val TAG = "VideoViewer"
 private val STATE_SET_PLAY = intArrayOf(R.attr.state_play, -R.attr.state_pause)
 private val STATE_SET_PAUSE = intArrayOf(-R.attr.state_play, R.attr.state_pause)
 
-class VideoViewerEx @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0) :
-        FrameLayout(context, attrs, defStyleAttr), TextureView.SurfaceTextureListener, CoroutineScope {
+class VideoViewer @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0) :
+        InterceptFrameLayout(context, attrs, defStyleAttr), TextureView.SurfaceTextureListener, CoroutineScope, SeekBar.OnSeekBarChangeListener {
+
     private val job = SupervisorJob()
     override val coroutineContext: CoroutineContext
         get() = Dispatchers.Main + job
@@ -42,21 +52,50 @@ class VideoViewerEx @JvmOverloads constructor(context: Context, attrs: Attribute
 
     private var dismissJob: Job? = null
 
-    private val playConditional: ConditionalAction = ConditionalAction(3) {
-        this[2] = false
+    private var isBuffering: Boolean = false
+        set(value) {
+            if (field != value) {
+                field = value
+                if (field) {
+                    loading.animate().apply { cancel() }.scaleX(1f).scaleY(1f).alpha(1f)
+                    btn.animate().apply { cancel() }.scaleX(0f).scaleY(0f).alpha(0f)
+                } else {
+                    btn.animate().apply { cancel() }.scaleY(1f).scaleX(1f).alpha(1f)
+                    loading.animate().apply { cancel() }.scaleX(0f).scaleY(0f).alpha(0f)
+                }
+            }
+            showControlConditional["stateChange"] = true
+        }
+
+    private val playConditional: ConditionalAction = ConditionalAction(arrayOf("surfaceAvailable", "prepared", "start")) {
+        this["start"] = false
         preview.visibility = View.INVISIBLE
         player.start()
         updateBtn()
-        controlConditional[1] = true
+        isBuffering = false
+        showControlConditional["stateChange"] = true
     }
-    private val controlConditional = ConditionalAction(2) {
+    private val showControlConditional = ConditionalAction(arrayOf("dataSource", "stateChange")) {
         controlLayout.visibility = View.VISIBLE
         dismissJob?.cancel()
-        if (player.isPlaying)
+        if (player.isPlaying && !isBuffering)
             dismissJob = launch { delay(controlDismissInterval);controlLayout.visibility = View.INVISIBLE }
     }
 
+    fun hideControlPanel() {
+        controlLayout.visibility = View.INVISIBLE
+    }
+
     init {
+        if (context is FragmentActivity) {
+            context.lifecycle.addObserver(object : LifecycleObserver {
+                @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
+                fun onDestroy() {
+                    release()
+                }
+            })
+        }
+        interceptor = { job.isCancelled }
         player.setOnPreparedListener {
             adjustAspectRatio(it.videoWidth, it.videoHeight)
             val duration = player.duration
@@ -65,21 +104,29 @@ class VideoViewerEx @JvmOverloads constructor(context: Context, attrs: Attribute
             player.start()
             player.pause()
 
-            controlConditional[1] = true
-            controlConditional[0] = true
-            playConditional[1] = true
+            playConditional["prepared"] = true
         }
         player.setOnCompletionListener {
             updateBtn()
-            controlConditional[1] = true
+            showControlConditional["stateChange"] = true
         }
         player.setOnBufferingUpdateListener { _, percent ->
             seekBar.secondaryProgress = percent * seekBar.max / 100
         }
+        player.setOnSeekCompleteListener {
+            isBuffering = false
+        }
+        player.setOnInfoListener { _, what, _ ->
+            when (what) {
+                MEDIA_INFO_BUFFERING_START -> isBuffering = true
+                MEDIA_INFO_BUFFERING_END -> isBuffering = false
+            }
+            return@setOnInfoListener false
+        }
         player.setOnErrorListener { _, _, _ ->
             playConditional.reset()
-            controlConditional.reset()
-            controlLayout.visibility = View.INVISIBLE
+            showControlConditional.reset()
+            hideControlPanel()
             return@setOnErrorListener true
         }
 
@@ -95,10 +142,9 @@ class VideoViewerEx @JvmOverloads constructor(context: Context, attrs: Attribute
         textureView.surfaceTextureListener = this
         textureView.setOnClickListener {
             if (controlLayout.visibility == View.VISIBLE) {
-                dismissJob?.cancel()
-                controlLayout.visibility = View.INVISIBLE
+                hideControlPanel()
             } else {
-                controlConditional[1] = true
+                showControlConditional["stateChange"] = true
             }
         }
 
@@ -112,29 +158,12 @@ class VideoViewerEx @JvmOverloads constructor(context: Context, attrs: Attribute
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             btn.setImageResource(R.drawable.asl_play_pause)
         }
+        loading.scaleX = 0f
+        loading.scaleY = 0f
+        loading.alpha = 0f
         updateBtn()
 
-        seekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(_seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                startText.text = DateUtils.formatElapsedTime((progress / 1000).toLong())
-                if (fromUser) {
-                    if (seekBar.secondaryProgress > progress) {
-                        player.seekTo(progress)
-                    } else {
-                        seekBar.progress = player.currentPosition
-                    }
-                    controlConditional[1] = true
-                }
-            }
-
-            override fun onStartTrackingTouch(seekBar: SeekBar?) {
-                dismissJob?.cancel()
-            }
-
-            override fun onStopTrackingTouch(seekBar: SeekBar?) {
-                controlConditional[1] = true
-            }
-        })
+        seekBar.setOnSeekBarChangeListener(this)
     }
 
     @Throws(IOException::class)
@@ -146,19 +175,33 @@ class VideoViewerEx @JvmOverloads constructor(context: Context, attrs: Attribute
         player.setDataSource(path)
         player.prepareAsync()
         updateBtn()
+        showControlConditional["dataSource"] = true
+        showControlConditional["stateChange"] = true
+    }
+
+    fun setDataSource(uri: Uri) {
+        if (job.isCancelled)
+            return
+        reset()
+
+        player.setDataSource(context, uri)
+        player.prepareAsync()
+        updateBtn()
+        showControlConditional["dataSource"] = true
+        showControlConditional["stateChange"] = true
     }
 
     fun start() {
         if (job.isCancelled)
             return
-        playConditional[2] = true
+        playConditional["start"] = true
     }
 
     fun reset() {
         if (job.isCancelled)
             return
-        playConditional[1] = false
-        controlConditional[0] = false
+        playConditional["prepared"] = false
+        showControlConditional["dataSource"] = false
 
         controlLayout.visibility = View.INVISIBLE
         if (player.isPlaying)
@@ -169,10 +212,10 @@ class VideoViewerEx @JvmOverloads constructor(context: Context, attrs: Attribute
     }
 
     fun pause() {
-        playConditional[2] = false
+        playConditional["start"] = false
+        showControlConditional["stateChange"] = true
         player.pause()
         updateBtn()
-        controlConditional[1] = true
     }
 
     fun release() {
@@ -180,14 +223,6 @@ class VideoViewerEx @JvmOverloads constructor(context: Context, attrs: Attribute
             return
         player.release()
         job.cancel()
-    }
-
-    override fun onTouchEvent(event: MotionEvent): Boolean {
-        return job.isCancelled || super.onTouchEvent(event)
-    }
-
-    override fun onInterceptTouchEvent(ev: MotionEvent): Boolean {
-        return job.isCancelled || super.onInterceptTouchEvent(ev)
     }
 
     val screenshot get() = textureView.bitmap
@@ -227,10 +262,25 @@ class VideoViewerEx @JvmOverloads constructor(context: Context, attrs: Attribute
         textureView.setTransform(txform)
     }
 
+    override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+        startText.text = DateUtils.formatElapsedTime((progress / 1000).toLong())
+        if (fromUser) {
+            player.seekTo(progress)
+        }
+    }
+
+    override fun onStartTrackingTouch(seekBar: SeekBar?) {
+        dismissJob?.cancel()
+    }
+
+    override fun onStopTrackingTouch(seekBar: SeekBar?) {
+        isBuffering = true
+    }
+
     override fun onSurfaceTextureAvailable(surface: SurfaceTexture, width: Int, height: Int) {
         if (!job.isCancelled) {
             player.setSurface(Surface(surface))
-            playConditional[0] = true
+            playConditional["surfaceAvailable"] = true
         }
     }
 
@@ -238,7 +288,7 @@ class VideoViewerEx @JvmOverloads constructor(context: Context, attrs: Attribute
 
     override fun onSurfaceTextureDestroyed(surface: SurfaceTexture): Boolean {
         if (!job.isCancelled) {
-            playConditional[0] = false
+            playConditional["surfaceAvailable"] = false
             player.pause()
             player.setSurface(null)
             updateBtn()

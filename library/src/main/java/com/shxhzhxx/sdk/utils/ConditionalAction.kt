@@ -1,19 +1,19 @@
 package com.shxhzhxx.sdk.utils
 
-import androidx.annotation.IntRange
+class ConditionalAction(conditions: Array<String>, private val action: ConditionalAction.(invoker: String) -> Unit) {
+    private val conditions = conditions.associate { it to false }.toMutableMap()
 
-class ConditionalAction(@IntRange(from = 1) size: Int, private val action: ConditionalAction.(invoker: Int) -> Unit) {
-    private val conditions: BooleanArray = BooleanArray(size)
-
-    operator fun set(index: Int, cond: Boolean) {
-        conditions[index] = cond
-        if (conditions.all { it })
-            action(index)
+    operator fun set(key: String, value: Boolean) {
+        if (!conditions.containsKey(key))
+            return
+        conditions[key] = value
+        if (conditions.all { it.value })
+            action(key)
     }
 
     fun reset() {
-        for (i in conditions.indices) {
-            conditions[i] = false
+        for (key in conditions.keys) {
+            conditions[key] = false
         }
     }
 }

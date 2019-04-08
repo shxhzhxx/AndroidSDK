@@ -9,7 +9,7 @@ import android.widget.FrameLayout
  * this viewGroup will intercept all touch event.
  * it is useful when a recyclerView wants to display without handle any event.
  */
-class InterceptFrameLayout @JvmOverloads constructor(
+open class InterceptFrameLayout @JvmOverloads constructor(
         context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0) : FrameLayout(context, attrs, defStyleAttr) {
     var interceptor: ((ev: MotionEvent) -> Boolean) = { true }
     override fun onInterceptTouchEvent(ev: MotionEvent): Boolean {

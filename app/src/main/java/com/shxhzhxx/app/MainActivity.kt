@@ -2,14 +2,10 @@ package com.shxhzhxx.app
 
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import com.shxhzhxx.sdk.activity.DownloadActivity
 import com.shxhzhxx.sdk.activity.fullscreen
 import com.shxhzhxx.sdk.utils.Param
 import kotlinx.android.synthetic.main.activity_main.*
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
 
 const val TAG = "MainActivity"
 
@@ -31,18 +27,20 @@ class MainActivity : DownloadActivity() {
             fullscreen()
         }
 
-        val job = launch {
-            while (isActive){
-                delay(1000)
-                Log.d(TAG,"awake")
-            }
-        }
-        iv.setOnClickListener {
-            if(job.isActive)
-                job.cancel()
-            else
-                job.start()
-        }
+        video.setDataSource("https://file.yizhujiao.com/11%20%E5%88%87%E5%9D%97%E6%8B%BC%E6%8E%A5%E6%B3%95.mp4")
+//        video.start()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+    }
+
+    override fun onStop() {
+        super.onStop()
+    }
+
+    override fun onStart() {
+        super.onStart()
     }
 }
 
