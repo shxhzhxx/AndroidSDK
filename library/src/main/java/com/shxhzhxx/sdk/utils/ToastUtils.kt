@@ -12,7 +12,7 @@ fun initToast(context: Context) {
     contextRef = WeakReference(context)
 }
 
-fun toast(msg: String) {
+fun toast(msg: String?) {
     val context = contextRef.get() ?: return
     toast?.cancel()
     toast = Toast.makeText(context, msg, Toast.LENGTH_SHORT).also { it.show() }

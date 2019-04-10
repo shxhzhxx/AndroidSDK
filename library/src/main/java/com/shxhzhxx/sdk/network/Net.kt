@@ -1,6 +1,7 @@
 package com.shxhzhxx.sdk.network
 
 import android.content.Context
+import android.content.pm.ApplicationInfo
 import android.net.ConnectivityManager
 import android.util.Log
 import androidx.lifecycle.Lifecycle
@@ -9,7 +10,6 @@ import androidx.lifecycle.OnLifecycleEvent
 import com.google.gson.Gson
 import com.google.gson.JsonParseException
 import com.google.gson.reflect.TypeToken
-import com.shxhzhxx.sdk.BuildConfig
 import com.shxhzhxx.sdk.R
 import com.shxhzhxx.urlloader.TaskManager
 import kotlinx.coroutines.CancellationException
@@ -55,6 +55,7 @@ class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: Any?) 
             CODE_CANCELED to context.resources.getString(R.string.err_msg_cancelled),
             CODE_MULTIPLE_REQUEST to context.resources.getString(R.string.err_msg_multiple_request)
     )
+    var debugMode = (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
     private val defaultErrorMessage = context.resources.getString(R.string.err_msg_default)
     private val connMgr = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
     private val okHttpClient = OkHttpClient.Builder()
@@ -114,7 +115,7 @@ class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: Any?) 
         }
         inlineRequest(key, Request.Builder().also { builder ->
             builder.url(url)
-            if (BuildConfig.DEBUG) {
+            if (debugMode) {
                 Log.d(TAG, "$url request:")
             }
             if (params.length() > 0) {
@@ -122,7 +123,7 @@ class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: Any?) 
                     PostType.FORM -> builder.post(RequestBody.create(DATA_TYPE_FORM, formatJsonToForm(params)))
                     PostType.JSON -> builder.post(RequestBody.create(DATA_TYPE_JSON, params.toString()))
                 }
-                if (BuildConfig.DEBUG) {
+                if (debugMode) {
                     formatJsonString(params.toString()).split('\n').forEach { Log.d(TAG, it) }
                 }
             }
@@ -200,7 +201,7 @@ class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: Any?) 
                     }
                 }
                 if (typeToken.type == String::class.java) {
-                    if (BuildConfig.DEBUG) {
+                    if (debugMode) {
                         Log.d(TAG, "${request.url()} raw response:\n$raw")
                     }
                     return@run CODE_OK to raw
@@ -208,14 +209,14 @@ class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: Any?) 
                 try {
                     return@run CODE_OK to Gson().fromJson<T>(raw, typeToken.type)
                             .also {
-                                if (BuildConfig.DEBUG) {
+                                if (debugMode) {
                                     Log.d(TAG, "${request.url()} response:")
                                     formatJsonString(raw).split('\n').forEach { Log.d(TAG, it) }
                                 }
                             }
                 } catch (e: JsonParseException) {
                     Log.e(TAG, "JsonParseException: ${e.message}")
-                    if (BuildConfig.DEBUG) {
+                    if (debugMode) {
                         Log.e(TAG, "${request.url()} raw response:\n$raw")
                     }
                     return@run CODE_UNEXPECTED_RESPONSE to null

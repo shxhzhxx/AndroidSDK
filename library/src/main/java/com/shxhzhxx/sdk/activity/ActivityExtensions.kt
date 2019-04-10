@@ -17,8 +17,8 @@ import kotlin.coroutines.resumeWithException
 private val activities = mutableListOf<WeakReference<Activity>>()
 
 data class Response<T>(
-        @SerializedName("errno", alternate = ["errorCode"]) val errno: Int?,
-        @SerializedName("msg", alternate = ["tips", "errorMsg"]) val msg: String?,
+        @SerializedName("errno", alternate = ["errorCode", "code"]) val errno: Int?,
+        @SerializedName("msg", alternate = ["tips", "errorMsg", "message"]) val msg: String?,
         @SerializedName("data", alternate = ["jsondata"]) val data: T?
 ) {
     val isSuccessful get() = errno == 0
