@@ -92,6 +92,8 @@ class VideoViewer @JvmOverloads constructor(context: Context, attrs: AttributeSe
 
     private var seekBarDragging = false
 
+    private var isPrepared = false
+
     fun hideControlPanel() {
         controlLayout.visibility = View.INVISIBLE
     }
@@ -115,6 +117,7 @@ class VideoViewer @JvmOverloads constructor(context: Context, attrs: AttributeSe
             player.pause()
 
             playConditional["prepared"] = true
+            isPrepared = true
             stateListener?.invoke(PlayState.PREPARE)
         }
         player.setOnCompletionListener {
@@ -150,7 +153,7 @@ class VideoViewer @JvmOverloads constructor(context: Context, attrs: AttributeSe
         launch {
             while (isActive) {
                 delay(1000)
-                if (!seekBarDragging)
+                if (!seekBarDragging && isPrepared)
                     seekBar.progress = player.currentPosition
             }
         }
@@ -218,6 +221,7 @@ class VideoViewer @JvmOverloads constructor(context: Context, attrs: AttributeSe
             return
         playConditional["prepared"] = false
         showControlConditional["dataSource"] = false
+        isPrepared = false
 
         controlLayout.visibility = View.INVISIBLE
         if (player.isPlaying) {
