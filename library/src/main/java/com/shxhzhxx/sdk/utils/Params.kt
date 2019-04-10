@@ -13,7 +13,7 @@ fun initParams(context: Context) {
 inline fun <reified T> saveParam(key: Param<T>, value: T) {
     sharedPreferences.edit().apply {
         when (value) {
-            is String -> putString(key.name, value)
+            is String? -> putString(key.name, value)
             is Int -> putInt(key.name, value)
             is Boolean -> putBoolean(key.name, value)
             is Long -> putLong(key.name, value)
@@ -25,7 +25,7 @@ inline fun <reified T> saveParam(key: Param<T>, value: T) {
 
 inline fun <reified T> getParam(key: Param<T>) = sharedPreferences.run {
     return@run when (key.defVal) {
-        is String -> getString(key.name, key.defVal) as T
+        is String? -> getString(key.name, key.defVal) as T
         is Int -> getInt(key.name, key.defVal) as T
         is Boolean -> getBoolean(key.name, key.defVal) as T
         is Long -> getLong(key.name, key.defVal) as T
