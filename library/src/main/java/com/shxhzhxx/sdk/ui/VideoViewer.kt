@@ -31,6 +31,10 @@ private const val TAG = "VideoViewer"
 private val STATE_SET_PLAY = intArrayOf(R.attr.state_play, -R.attr.state_pause)
 private val STATE_SET_PAUSE = intArrayOf(-R.attr.state_play, R.attr.state_pause)
 
+enum class PlayState {
+    PREPARE, PLAY, STOP, RELEASE
+}
+
 class VideoViewer @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0) :
         InterceptFrameLayout(context, attrs, defStyleAttr), TextureView.SurfaceTextureListener, CoroutineScope, SeekBar.OnSeekBarChangeListener {
 
@@ -75,6 +79,7 @@ class VideoViewer @JvmOverloads constructor(context: Context, attrs: AttributeSe
         updateBtn()
         isBuffering = false
         showControlConditional["stateChange"] = true
+        stateListener?.invoke(PlayState.PLAY)
     }
     private val showControlConditional = ConditionalAction(arrayOf("dataSource", "stateChange")) {
         controlLayout.visibility = View.VISIBLE
@@ -82,6 +87,8 @@ class VideoViewer @JvmOverloads constructor(context: Context, attrs: AttributeSe
         if (player.isPlaying && !isBuffering)
             dismissJob = launch { delay(controlDismissInterval);controlLayout.visibility = View.INVISIBLE }
     }
+
+    var stateListener: ((state: PlayState) -> Unit)? = null
 
     fun hideControlPanel() {
         controlLayout.visibility = View.INVISIBLE
@@ -106,10 +113,12 @@ class VideoViewer @JvmOverloads constructor(context: Context, attrs: AttributeSe
             player.pause()
 
             playConditional["prepared"] = true
+            stateListener?.invoke(PlayState.PREPARE)
         }
         player.setOnCompletionListener {
             updateBtn()
             showControlConditional["stateChange"] = true
+            stateListener?.invoke(PlayState.STOP)
         }
         player.setOnBufferingUpdateListener { _, percent ->
             seekBar.secondaryProgress = percent * seekBar.max / 100
@@ -129,6 +138,7 @@ class VideoViewer @JvmOverloads constructor(context: Context, attrs: AttributeSe
                 playConditional.reset()
                 showControlConditional.reset()
                 hideControlPanel()
+                release()
             }
             return@setOnErrorListener true
         }
@@ -207,8 +217,10 @@ class VideoViewer @JvmOverloads constructor(context: Context, attrs: AttributeSe
         showControlConditional["dataSource"] = false
 
         controlLayout.visibility = View.INVISIBLE
-        if (player.isPlaying)
+        if (player.isPlaying) {
             player.stop()
+            stateListener?.invoke(PlayState.STOP)
+        }
         player.reset()
         seekBar.progress = 0
         updateBtn()
@@ -219,6 +231,7 @@ class VideoViewer @JvmOverloads constructor(context: Context, attrs: AttributeSe
         showControlConditional["stateChange"] = true
         player.pause()
         updateBtn()
+        stateListener?.invoke(PlayState.STOP)
     }
 
     fun release() {
@@ -226,6 +239,7 @@ class VideoViewer @JvmOverloads constructor(context: Context, attrs: AttributeSe
             return
         player.release()
         job.cancel()
+        stateListener?.invoke(PlayState.RELEASE)
     }
 
     val screenshot get() = textureView.bitmap
@@ -301,6 +315,7 @@ class VideoViewer @JvmOverloads constructor(context: Context, attrs: AttributeSe
             player.pause()
             player.setSurface(null)
             updateBtn()
+            stateListener?.invoke(PlayState.STOP)
         }
         return true
     }
