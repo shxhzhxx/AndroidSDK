@@ -90,6 +90,8 @@ class VideoViewer @JvmOverloads constructor(context: Context, attrs: AttributeSe
 
     var stateListener: ((state: PlayState) -> Unit)? = null
 
+    private var seekBarDragging = false
+
     fun hideControlPanel() {
         controlLayout.visibility = View.INVISIBLE
     }
@@ -148,7 +150,8 @@ class VideoViewer @JvmOverloads constructor(context: Context, attrs: AttributeSe
         launch {
             while (isActive) {
                 delay(1000)
-                seekBar.progress = player.currentPosition
+                if (!seekBarDragging)
+                    seekBar.progress = player.currentPosition
             }
         }
         controlLayout.visibility = View.INVISIBLE
@@ -283,17 +286,17 @@ class VideoViewer @JvmOverloads constructor(context: Context, attrs: AttributeSe
 
     override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
         startText.text = DateUtils.formatElapsedTime((progress / 1000).toLong())
-        if (fromUser) {
-            player.seekTo(progress)
-        }
     }
 
     override fun onStartTrackingTouch(seekBar: SeekBar?) {
+        seekBarDragging = true
         dismissJob?.cancel()
     }
 
-    override fun onStopTrackingTouch(seekBar: SeekBar?) {
+    override fun onStopTrackingTouch(_seekBar: SeekBar?) {
+        seekBarDragging = false
         isBuffering = true
+        player.seekTo(seekBar.progress)
     }
 
     override fun onSurfaceTextureAvailable(surface: SurfaceTexture, width: Int, height: Int) {
