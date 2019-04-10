@@ -203,7 +203,7 @@ suspend fun ForResultActivity.promptInstallCoroutine(uri: Uri, onFailure: (() ->
 //            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
 //        } else {
 //            if ("content".equals(uri.getScheme())) {//api24以下版本不支持scheme为content的uri，转换为path
-//                uri = FileUtils.getUriForFile(this, FileUtils.getFileByUri(this, uri));
+//                uri = FileUtils.exposeUriForFile(this, FileUtils.getFileByUri(this, uri));
 //            }
 //        }
 //        intent.setDataAndType(uri, "application/vnd.android.package-archive");

@@ -4,16 +4,17 @@ import android.content.Context
 import android.graphics.Matrix
 import android.graphics.SurfaceTexture
 import android.media.MediaPlayer
-import android.media.MediaPlayer.MEDIA_INFO_BUFFERING_END
-import android.media.MediaPlayer.MEDIA_INFO_BUFFERING_START
+import android.media.MediaPlayer.*
 import android.net.Uri
 import android.os.Build
 import android.text.format.DateUtils
 import android.util.AttributeSet
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.Surface
 import android.view.TextureView
 import android.view.View
+import android.widget.ImageView
 import android.widget.SeekBar
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.Lifecycle
@@ -123,10 +124,12 @@ class VideoViewer @JvmOverloads constructor(context: Context, attrs: AttributeSe
             }
             return@setOnInfoListener false
         }
-        player.setOnErrorListener { _, _, _ ->
-            playConditional.reset()
-            showControlConditional.reset()
-            hideControlPanel()
+        player.setOnErrorListener { _, what, _ ->
+            if (what == MEDIA_ERROR_SERVER_DIED) {
+                playConditional.reset()
+                showControlConditional.reset()
+                hideControlPanel()
+            }
             return@setOnErrorListener true
         }
 
@@ -227,6 +230,8 @@ class VideoViewer @JvmOverloads constructor(context: Context, attrs: AttributeSe
 
     val screenshot get() = textureView.bitmap
 
+    fun getPreview(): ImageView = preview
+
     private fun updateBtn() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             btn.setImageState(if (player.isPlaying) STATE_SET_PAUSE else STATE_SET_PLAY, true)
@@ -278,15 +283,19 @@ class VideoViewer @JvmOverloads constructor(context: Context, attrs: AttributeSe
     }
 
     override fun onSurfaceTextureAvailable(surface: SurfaceTexture, width: Int, height: Int) {
+        Log.d(TAG, "onSurfaceTextureAvailable")
         if (!job.isCancelled) {
             player.setSurface(Surface(surface))
             playConditional["surfaceAvailable"] = true
         }
     }
 
-    override fun onSurfaceTextureSizeChanged(surface: SurfaceTexture, width: Int, height: Int) {}
+    override fun onSurfaceTextureSizeChanged(surface: SurfaceTexture, width: Int, height: Int) {
+        Log.d(TAG, "onSurfaceTextureSizeChanged")
+    }
 
     override fun onSurfaceTextureDestroyed(surface: SurfaceTexture): Boolean {
+        Log.d(TAG, "onSurfaceTextureDestroyed")
         if (!job.isCancelled) {
             playConditional["surfaceAvailable"] = false
             player.pause()

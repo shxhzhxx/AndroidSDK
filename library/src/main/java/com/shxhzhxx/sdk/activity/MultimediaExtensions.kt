@@ -6,6 +6,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
+import android.os.Environment.getExternalStoragePublicDirectory
 import android.provider.MediaStore
 import androidx.core.content.FileProvider
 import com.shxhzhxx.sdk.imageLoader
@@ -66,15 +67,22 @@ fun ForResultActivity.openDocument(type: DocumentType = DocumentType.IMAGE, onOp
 
 fun ForResultActivity.takePicture(onTake: (Uri, File) -> Unit, onFailure: (() -> Unit)? = null) {
     launch {
-        requestPermissionsCoroutine(listOf(Manifest.permission.CAMERA), onFailure)
+        requestPermissionsCoroutine(listOf(Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE), onFailure)
         val file = createPictureFile() ?: run { onFailure?.invoke(); return@launch }
-        val uri = getUriForFile(file)
+        val uri = exposeUriForFile(file)
         val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
         intent.putExtra(MediaStore.EXTRA_OUTPUT, uri)
         intent.resolveActivity(packageManager) ?: run { onFailure?.invoke(); return@launch }
         startActivityForResultCoroutine(intent, onFailure)
+        mediaScanFile(file)
         onTake(uri, file)
     }
+}
+
+fun Context.mediaScanFile(file: File) {
+    val scanIntent = Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE)
+    scanIntent.data = Uri.fromFile(file)
+    sendBroadcast(scanIntent)
 }
 
 suspend fun ForResultActivity.takePictureCoroutine(onFailure: (() -> Unit)? = null): MediaSource =
@@ -88,13 +96,16 @@ suspend fun ForResultActivity.takePictureCoroutine(onFailure: (() -> Unit)? = nu
             throw e
         }
 
-fun Context.getUriForFile(file: File): Uri = FileProvider.getUriForFile(this, "$packageName.FileProvider", file)
+fun Context.exposeUriForFile(file: File): Uri = FileProvider.getUriForFile(this, "$packageName.FileProvider", file)
 
-fun Context.createPictureFile() = try {
-    File.createTempFile(imageLoader.bitmapLoader.urlLoader.md5(UUID.randomUUID().toString()), ".jpg", getExternalFilesDir(Environment.DIRECTORY_PICTURES))
+fun createPictureFile() = if (!isExternalStorageWritable) null else try {
+    File.createTempFile(imageLoader.bitmapLoader.urlLoader.md5(UUID.randomUUID().toString()), ".jpg",
+            getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES))
 } catch (e: IOException) {
     null
 }
+
+val isExternalStorageWritable get() = Environment.getExternalStorageState() == Environment.MEDIA_MOUNTED
 
 fun ForResultActivity.takeVideo(onTake: (Uri) -> Unit, onFailure: (() -> Unit)? = null) {
     launch {
