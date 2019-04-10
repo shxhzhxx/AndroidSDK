@@ -24,11 +24,14 @@ open class Application : android.app.Application() {
         super.onCreate()
         val processName = (getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager)
                 .runningAppProcesses.find { it.pid == android.os.Process.myPid() }?.processName
-        javaClass.methods.filter { method -> method.annotations.any { it is OnProcessCreate && processName in it.processNames } }
-                .forEach { it(this) }
+        if (processName == packageName) {
+            onMainProcessCreate()
+        } else {
+            javaClass.methods.filter { method -> method.annotations.any { it is OnProcessCreate && processName in it.processNames } }
+                    .forEach { it(this) }
+        }
     }
 
-    @OnProcessCreate([BuildConfig.APPLICATION_ID])
     open fun onMainProcessCreate() {
         imageLoader = ImageLoader(contentResolver, cacheDir)
         net = Net(this)
