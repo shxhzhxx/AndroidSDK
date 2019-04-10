@@ -4,4 +4,12 @@
         <item name="android:windowMinWidthMinor">300dp</item>
         <item name="windowFixedWidthMinor">300dp</item>
     </style>
+    <style name="whiteProgressBar" parent="Widget.AppCompat.ProgressBar">
+        <!-- Customize your theme here. -->
+        <item name="colorAccent">#ffffff</item>
+    </style>
+    <style name="whiteSeekBar" parent="Widget.AppCompat.SeekBar">
+        <!-- Customize your theme here. -->
+        <item name="colorAccent">#ffffff</item>
+    </style>
 </resources>

@@ -1,35 +1,47 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
     <TextureView
         android:id="@+id/textureView"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"/>
+        android:layout_height="match_parent" />
 
 
     <ImageView
         android:id="@+id/preview"
-        android:src="#ffffff"
-        android:scaleType="centerCrop"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"/>
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:src="#ffffff" />
 
     <FrameLayout
         android:id="@+id/controlLayout"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
+        <View
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:layout_gravity="center"
+            android:background="@drawable/play_bg_circle">
+
+        </View>
+
         <ImageView
             android:id="@+id/btn"
-            android:layout_width="80dp"
-            android:layout_height="80dp"
-            android:padding="5dp"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
             android:layout_gravity="center"
-            android:contentDescription="@null"
-            android:background="@drawable/play_bg_circle"/>
+            android:contentDescription="@null" />
+
+        <ProgressBar
+            android:id="@+id/loading"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_gravity="center"
+            android:theme="@style/whiteProgressBar" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -44,22 +56,22 @@
                 android:id="@+id/startText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="#ffffff"/>
+                android:textColor="#ffffff" />
 
             <SeekBar
                 android:id="@+id/seekBar"
                 android:layout_width="0dp"
-                android:progressBackgroundTint="#b4ffffff"
                 android:layout_height="wrap_content"
-                android:layout_marginEnd="15dp"
                 android:layout_marginStart="15dp"
-                android:layout_weight="1"/>
+                android:layout_marginEnd="15dp"
+                android:layout_weight="1"
+                android:theme="@style/whiteSeekBar" />
 
             <TextView
                 android:id="@+id/endText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="#ffffff"/>
+                android:textColor="#ffffff" />
         </LinearLayout>
     </FrameLayout>
 </FrameLayout>

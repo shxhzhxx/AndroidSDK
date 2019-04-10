@@ -1,5 +1,7 @@
 apply plugin: 'com.android.library'
 apply plugin: 'com.github.dcendents.android-maven'
+apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-android-extensions'
 group='com.github.shxhzhxx'
 
 android {
@@ -28,15 +30,15 @@ android {
 dependencies {
     implementation 'androidx.appcompat:appcompat:1.0.2'
     implementation 'androidx.annotation:annotation:1.0.1'
-    implementation 'androidx.exifinterface:exifinterface:1.0.0-rc02'
     implementation 'com.google.android.material:material:1.0.0'
-    implementation 'com.github.shxhzhxx:ImageLoader:1.1.2'
+    implementation 'com.github.shxhzhxx:ImageLoader:2.0.4'
     implementation 'com.github.yalantis:ucrop:2.2.2'
     implementation 'com.github.chrisbanes:PhotoView:2.1.4'
-
+    implementation "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
     //1.1.0 androidx 版本 下拉刷新，上拉加载第三方库
     implementation 'com.scwang.smartrefresh:SmartRefreshLayout:1.1.0-andx-3'
     implementation 'com.scwang.smartrefresh:SmartRefreshHeader:1.1.0-andx-3'
+    implementation 'com.google.code.gson:gson:2.8.5'
 }
 
 // 指定编码
