@@ -30,10 +30,10 @@ const val TAG = "Net"
 const val CODE_OK = 0
 const val CODE_NO_AVAILABLE_NETWORK = -1
 const val CODE_TIMEOUT = -2
-const val CODE_GET_PARAM_FAILED = -3
-const val CODE_UNEXPECTED_RESPONSE = -4
-const val CODE_CANCELED = -5
-const val CODE_MULTIPLE_REQUEST = -6
+const val CODE_UNEXPECTED_RESPONSE = -3
+const val CODE_CANCELED = -4
+const val CODE_MULTIPLE_REQUEST = -5
+const val CODE_UNATTACHED_FRAGMENT = -6
 
 val DATA_TYPE_FORM = MediaType.parse("application/x-www-form-urlencoded;charset=utf-8")
 val DATA_TYPE_FILE = MediaType.parse("application/octet-stream")
@@ -50,7 +50,7 @@ class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: Any?) 
             CODE_OK to context.resources.getString(R.string.err_msg_ok),
             CODE_NO_AVAILABLE_NETWORK to context.resources.getString(R.string.err_msg_no_available_network),
             CODE_TIMEOUT to context.resources.getString(R.string.err_msg_timeout),
-            CODE_GET_PARAM_FAILED to context.resources.getString(R.string.err_msg_get_param_failed),
+            CODE_UNATTACHED_FRAGMENT to context.resources.getString(R.string.err_msg_unattached_fragment),
             CODE_UNEXPECTED_RESPONSE to context.resources.getString(R.string.err_msg_unexpected_response),
             CODE_CANCELED to context.resources.getString(R.string.err_msg_cancelled),
             CODE_MULTIPLE_REQUEST to context.resources.getString(R.string.err_msg_multiple_request)

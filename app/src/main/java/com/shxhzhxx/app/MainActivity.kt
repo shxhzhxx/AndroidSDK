@@ -2,12 +2,11 @@ package com.shxhzhxx.app
 
 import android.os.Build
 import android.os.Bundle
-import com.shxhzhxx.sdk.activity.DownloadActivity
-import com.shxhzhxx.sdk.activity.fullscreen
-import com.shxhzhxx.sdk.activity.launchImageViewerActivity
+import com.shxhzhxx.sdk.activity.*
 import com.shxhzhxx.sdk.imageLoader
 import com.shxhzhxx.sdk.utils.Param
 import kotlinx.android.synthetic.main.activity_main.*
+import kotlinx.coroutines.launch
 
 const val TAG = "MainActivity"
 

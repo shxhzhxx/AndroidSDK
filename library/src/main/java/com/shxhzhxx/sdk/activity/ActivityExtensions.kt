@@ -24,11 +24,6 @@ data class Response<T>(
     val isSuccessful get() = errno == 0
 }
 
-inline fun <reified T> Fragment.post(url: String, params: JSONObject = net.defaultParams, postType: PostType = PostType.FORM,
-                                     noinline onResponse: ((msg: String, data: T) -> Unit)? = null,
-                                     noinline onFailure: ((errno: Int, msg: String) -> Unit)? = null) {
-    activity?.post(url, params, postType, onResponse, onFailure)
-}
 
 inline fun <reified T> FragmentActivity.post(url: String, params: JSONObject = net.defaultParams, postType: PostType = PostType.FORM,
                                              noinline onResponse: ((msg: String, data: T) -> Unit)? = null,
@@ -43,18 +38,6 @@ inline fun <reified T> FragmentActivity.post(url: String, params: JSONObject = n
                     }
                 }, onFailure = onFailure)
 
-suspend inline fun <reified T> Fragment.postCoroutine(url: String, params: JSONObject = net.defaultParams, postType: PostType = PostType.FORM,
-                                                      noinline onResponse: ((msg: String, data: T) -> Unit)? = null,
-                                                      onFailure: (errno: Int, msg: String) -> Unit = { errno, msg ->
-                                                          when (errno) {
-                                                              CODE_MULTIPLE_REQUEST, CODE_CANCELED -> {
-                                                              }
-                                                              else -> toast(msg)
-                                                          }
-                                                      }): T {
-    return activity?.postCoroutine(url, params, postType, onResponse, onFailure)
-            ?: throw CancellationException()
-}
 
 suspend inline fun <reified T> FragmentActivity.postCoroutine(url: String, params: JSONObject = net.defaultParams, postType: PostType = PostType.FORM,
                                                               noinline onResponse: ((msg: String, data: T) -> Unit)? = null,

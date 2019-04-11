@@ -11,11 +11,10 @@ import android.provider.MediaStore
 import androidx.core.content.FileProvider
 import com.shxhzhxx.sdk.imageLoader
 import com.yalantis.ucrop.UCrop
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.*
 import java.io.File
 import java.io.IOException
+import java.io.InputStream
 import java.util.*
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -153,3 +152,41 @@ suspend fun ForResultActivity.cropPictureCoroutine(picture: Uri, aspectX: Float,
             onFailure?.invoke()
             throw e
         }
+
+suspend fun Uri.toFileCoroutine(context: Context, dst: File? = null, onFailure: (() -> Unit)? = null) = convert<File>(onFailure) { isCancelled ->
+    (context.contentResolver.openInputStream(this)
+            ?: throw IOException()).use { input ->
+        (dst ?: File.createTempFile(UUID.randomUUID().toString(), "", context.cacheDir))
+                .also { file -> input.toFile(file, isCancelled) }
+    }
+}
+
+fun InputStream.toFile(dst: File, isCancelled: (() -> Boolean)? = null) {
+    dst.outputStream().use { output ->
+        val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+        var bytes = read(buffer)
+        while (bytes >= 0 && isCancelled?.invoke() != true) {
+            output.write(buffer, 0, bytes)
+            bytes = read(buffer)
+        }
+    }
+}
+
+suspend fun <T> convert(onFailure: (() -> Unit)? = null, worker: (isCancelled: () -> Boolean) -> T) = coroutineScope<T> {
+    var cancel = false
+    return@coroutineScope try {
+        suspendCancellableCoroutine {
+            launch(Dispatchers.IO) {
+                try {
+                    it.resume(worker { cancel })
+                } catch (e: Throwable) {
+                    it.resumeWithException(CancellationException())
+                }
+            }
+        }
+    } catch (e: CancellationException) {
+        cancel = true
+        onFailure?.invoke()
+        throw e
+    }
+}
