@@ -7,16 +7,25 @@ import android.os.Bundle
 import android.view.View
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
-import kotlinx.coroutines.CancellationException
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProviders
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlin.coroutines.CoroutineContext
 
+class MyViewModel : ViewModel() {
+    val job = SupervisorJob()
+    override fun onCleared() {
+        super.onCleared()
+        job.cancel()
+    }
+}
+
 abstract class CoroutineActivity : AppCompatActivity(), CoroutineScope {
-    private val job = SupervisorJob()
     override val coroutineContext: CoroutineContext
-        get() = Dispatchers.Main + job
+        get() = Dispatchers.Main + vm.job
+    private val vm by lazy { ViewModelProviders.of(this).get(MyViewModel::class.java) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -25,7 +34,6 @@ abstract class CoroutineActivity : AppCompatActivity(), CoroutineScope {
 
     override fun onDestroy() {
         super.onDestroy()
-        job.cancel()
         removeActivity()
     }
 }

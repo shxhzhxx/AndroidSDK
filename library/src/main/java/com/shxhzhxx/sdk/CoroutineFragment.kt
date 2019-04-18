@@ -28,9 +28,9 @@ open class CoroutineFragment : Fragment(), CoroutineScope {
 
 inline fun <reified T> Fragment.post(url: String, params: JSONObject = net.defaultParams, postType: PostType = PostType.FORM,
                                      noinline onResponse: ((msg: String, data: T) -> Unit)? = null,
-                                     noinline onFailure: ((errno: Int, msg: String) -> Unit)? = null) {
-    activity?.post(url, params, postType, onResponse, onFailure)
-            ?: onFailure?.invoke(CODE_UNATTACHED_FRAGMENT, net.getMsg(CODE_UNATTACHED_FRAGMENT))
+                                     noinline onFailure: ((errno: Int, msg: String) -> Unit)? = null): Int {
+    return activity?.post(url, params, postType, onResponse, onFailure)
+            ?: run { onFailure?.invoke(CODE_UNATTACHED_FRAGMENT, net.getMsg(CODE_UNATTACHED_FRAGMENT));-1 }
 }
 
 suspend inline fun <reified T> Fragment.postCoroutine(url: String, params: JSONObject = net.defaultParams, postType: PostType = PostType.FORM,

@@ -7,9 +7,19 @@ import android.util.Log
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.OnLifecycleEvent
-import com.google.gson.Gson
-import com.google.gson.JsonParseException
-import com.google.gson.reflect.TypeToken
+import com.fasterxml.jackson.annotation.JsonAlias
+import com.fasterxml.jackson.core.JsonParser
+import com.fasterxml.jackson.core.JsonToken
+import com.fasterxml.jackson.core.type.TypeReference
+import com.fasterxml.jackson.databind.DeserializationContext
+import com.fasterxml.jackson.databind.DeserializationFeature
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.deser.std.StringDeserializer
+import com.fasterxml.jackson.datatype.jsonorg.JSONArrayDeserializer
+import com.fasterxml.jackson.datatype.jsonorg.JSONObjectDeserializer
+import com.fasterxml.jackson.datatype.jsonorg.JsonOrgModule
+import com.fasterxml.jackson.module.kotlin.readValue
+import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import com.shxhzhxx.sdk.R
 import com.shxhzhxx.urlloader.TaskManager
 import kotlinx.coroutines.CancellationException
@@ -43,6 +53,51 @@ enum class PostType {
     FORM, JSON
 }
 
+open class JsonStringDeserializer : StringDeserializer() {
+    override fun deserialize(p: JsonParser, ctxt: DeserializationContext): String {
+        return try {
+            super.deserialize(p, ctxt)
+        } catch (e: Throwable) {
+            when {
+                p.currentToken == JsonToken.START_OBJECT ->
+                    JSONObjectDeserializer.instance.deserialize(p, ctxt).toString()
+                p.currentToken == JsonToken.START_ARRAY ->
+                    JSONArrayDeserializer.instance.deserialize(p, ctxt).toString()
+                else -> throw e
+            }
+        }
+    }
+}
+
+val mapper = ObjectMapper().apply {
+    registerKotlinModule()
+    registerModule(JsonOrgModule().apply { addDeserializer(String::class.java, JsonStringDeserializer()) })
+    configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+    configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, true)
+}
+
+class RequestKey(private val url: String, params: JSONObject) {
+    private val _params = mapper.readValue<Map<String, Any>>(params.toString())
+    override fun equals(other: Any?): Boolean {
+        return hashCode() == other?.hashCode()
+    }
+
+    override fun hashCode(): Int {
+        return url.hashCode() * 31 + _params.hashCode()
+    }
+}
+
+data class ResponseHeader(
+        @JsonAlias("errorCode", "code") val errno: Int,
+        @JsonAlias("tips", "errorMsg", "message") val msg: String
+) {
+    val isSuccessful get() = errno == 0
+}
+
+data class ResponseData<T>(
+        @JsonAlias("jsondata") val data: T
+)
+
 class InternalCancellationException(val errno: Int, val msg: String) : CancellationException()
 
 class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: Any?) -> Unit, Unit>() {
@@ -71,11 +126,11 @@ class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: Any?) 
 
     fun getMsg(errno: Int, defValue: String = defaultErrorMessage) = codeMsg[errno] ?: defValue
 
-    fun <T> request(key: Any, request: Request, typeToken: TypeToken<T>, lifecycle: Lifecycle? = null,
-                    onResult: ((errno: Int, msg: String, data: Any?) -> Unit)? = null) {
+    fun <T> request(key: Any, request: Request, type: TypeReference<T>, lifecycle: Lifecycle? = null,
+                    onResult: ((errno: Int, msg: String, data: Any?) -> Unit)? = null): Int {
         if (isRunning(key)) {
             onResult?.invoke(CODE_MULTIPLE_REQUEST, getMsg(CODE_MULTIPLE_REQUEST), null)
-            return
+            return -1
         }
         if (lifecycle != null && !lifecycleSet.contains(lifecycle)) {
             lifecycleSet.add(lifecycle)
@@ -87,33 +142,32 @@ class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: Any?) 
                 }
             })
         }
-        asyncStart(key, { Worker(key, request, typeToken) }, lifecycle, onResult)
+        return asyncStart(key, { Worker(key, request, type) }, lifecycle, onResult)
     }
 
     inline fun <reified T> inlineRequest(key: Any, request: Request, lifecycle: Lifecycle? = null,
                                          noinline onResponse: ((data: T) -> Unit)? = null,
-                                         noinline onFailure: ((errno: Int, msg: String) -> Unit)? = null) {
-        request(key, request, object : TypeToken<T>() {}, lifecycle) { errno, msg, data ->
-            if (errno == CODE_OK) {
-                if (data is T)
-                    onResponse?.invoke(data)
-                else
-                    onFailure?.invoke(CODE_UNEXPECTED_RESPONSE, getMsg(CODE_UNEXPECTED_RESPONSE))
-            } else {
-                onFailure?.invoke(errno, msg)
+                                         noinline onFailure: ((errno: Int, msg: String) -> Unit)? = null) =
+            request(key, request, object : TypeReference<T>() {}, lifecycle) { errno, msg, data ->
+                if (errno == CODE_OK) {
+                    if (data is T)
+                        onResponse?.invoke(data)
+                    else
+                        onFailure?.invoke(CODE_UNEXPECTED_RESPONSE, getMsg(CODE_UNEXPECTED_RESPONSE))
+                } else {
+                    onFailure?.invoke(errno, msg)
+                }
             }
-        }
-    }
 
     inline fun <reified T> post(url: String, key: Any, params: JSONObject = defaultParams, lifecycle: Lifecycle? = null, postType: PostType = PostType.FORM,
                                 noinline onResponse: ((data: T) -> Unit)? = null,
-                                noinline onFailure: ((errno: Int, msg: String) -> Unit)? = null) {
+                                noinline onFailure: ((errno: Int, msg: String) -> Unit)? = null): Int {
         if (params != defaultParams) {
             for (k in defaultParams.keys()) {
                 if (!params.has(k)) params.put(k, defaultParams.get(k))
             }
         }
-        inlineRequest(key, Request.Builder().also { builder ->
+        return inlineRequest(key, Request.Builder().also { builder ->
             builder.url(url)
             if (debugMode) {
                 Log.d(TAG, "$url request:")
@@ -151,14 +205,14 @@ class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: Any?) 
 
     inline fun <reified T> postFile(url: String, key: Any, lifecycle: Lifecycle? = null, file: File,
                                     noinline onResponse: ((data: T) -> Unit)? = null,
-                                    noinline onFailure: ((errno: Int, msg: String) -> Unit)? = null) {
-        inlineRequest(key, Request.Builder().url(url).post(RequestBody.create(DATA_TYPE_FILE, file)).build(), lifecycle, onResponse, onFailure)
-    }
+                                    noinline onFailure: ((errno: Int, msg: String) -> Unit)? = null) =
+            inlineRequest(key, Request.Builder().url(url).post(RequestBody.create(DATA_TYPE_FILE, file)).build(), lifecycle, onResponse, onFailure)
+
 
     inline fun <reified T> postMultipartForm(url: String, key: Any, lifecycle: Lifecycle? = null, files: List<Pair<String, File>> = emptyList(),
                                              noinline onParams: ((params: JSONObject) -> JSONObject)? = null,
                                              noinline onResponse: ((data: T) -> Unit)? = null,
-                                             noinline onFailure: ((errno: Int, msg: String) -> Unit)? = null) {
+                                             noinline onFailure: ((errno: Int, msg: String) -> Unit)? = null): Int {
         val builder = MultipartBody.Builder().setType(MultipartBody.FORM)
         for ((name, file) in files) {
             builder.addFormDataPart(name, file.name, RequestBody.create(DATA_TYPE_FILE, file))
@@ -168,10 +222,11 @@ class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: Any?) 
                 builder.addFormDataPart(k, params.getString(k))
             }
         }
-        inlineRequest(key, Request.Builder().url(url).post(builder.build()).build(), lifecycle, onResponse, onFailure)
+        return inlineRequest(key, Request.Builder().url(url).post(builder.build()).build(), lifecycle, onResponse, onFailure)
     }
 
-    private inner class Worker<T>(key: Any, private val request: Request, private val typeToken: TypeToken<T>) : Task(key) {
+    private inner class Worker<T>(key: Any, private val request: Request, private val type: TypeReference<T>,
+                                  private val wrap: Boolean = true) : Task(key) {
         override fun onCancel() {
             observers.forEach { it?.invoke(CODE_CANCELED, getMsg(CODE_CANCELED), null) }
         }
@@ -182,7 +237,7 @@ class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: Any?) 
 
         override fun doInBackground() {
             val call = okHttpClient.newCall(request)
-            val (errno, data) = kotlin.run {
+            val (errno, data) = run {
                 val raw = try {
                     call.execute()
                 } catch (e: IOException) {
@@ -200,22 +255,15 @@ class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: Any?) 
                         return@run (if (isNetworkAvailable) CODE_TIMEOUT else CODE_NO_AVAILABLE_NETWORK) to null
                     }
                 }
-                if (typeToken.type == String::class.java) {
-                    if (debugMode) {
-                        Log.d(TAG, "${request.url()} raw response:\n$raw")
-                    }
-                    return@run CODE_OK to raw
-                }
                 try {
-                    return@run CODE_OK to Gson().fromJson<T>(raw, typeToken.type)
-                            .also {
-                                if (debugMode) {
-                                    Log.d(TAG, "${request.url()} response:")
-                                    formatJsonString(raw).split('\n').forEach { Log.d(TAG, it) }
-                                }
-                            }
-                } catch (e: JsonParseException) {
-                    Log.e(TAG, "JsonParseException: ${e.message}")
+                    return@run CODE_OK to mapper.readValue<T>(raw, type).also {
+                        if (debugMode) {
+                            Log.d(TAG, "${request.url()} response:")
+                            formatJsonString(raw).split('\n').forEach { Log.d(TAG, it) }
+                        }
+                    }
+                } catch (e: Throwable) {
+                    Log.e(TAG, "readValueException: ${e.message}")
                     if (debugMode) {
                         Log.e(TAG, "${request.url()} raw response:\n$raw")
                     }

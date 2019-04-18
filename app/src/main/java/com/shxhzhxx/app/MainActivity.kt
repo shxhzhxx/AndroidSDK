@@ -2,9 +2,12 @@ package com.shxhzhxx.app
 
 import android.os.Build
 import android.os.Bundle
-import com.shxhzhxx.sdk.activity.*
-import com.shxhzhxx.sdk.imageLoader
+import android.util.Log
+import com.shxhzhxx.sdk.activity.DownloadActivity
+import com.shxhzhxx.sdk.activity.fullscreen
+import com.shxhzhxx.sdk.activity.postCoroutine
 import com.shxhzhxx.sdk.utils.Param
+import com.shxhzhxx.sdk.utils.toast
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.coroutines.launch
 
@@ -27,44 +30,53 @@ const val api1 = "https://wanandroid.com/wxarticle/chapters/json"
 const val api2 = "https://static.usasishu.com/api.txt"
 const val api3 = "https://static.usasishu.com/null.txt"
 const val api4 = "https://static.usasishu.com/empty.txt"
+const val apiJson = "https://image.yizhujiao.com/testApi2.txt"
+const val apiStringArr = "https://image.yizhujiao.com/stringArrApi.txt"
+const val apiFailure = "https://static.usasishu.com/failureApi.txt"
 
 class MainActivity : DownloadActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             fullscreen()
         }
 
-        imageLoader.bitmapLoader.urlLoader.load(u2, onLoad = {
-            val paths = listOf(u1, it.absolutePath, u3, u4, u5)
-            val ivs = listOf(iv1, iv2, iv3, iv4, iv5)
-
-            val pairs = ivs.mapIndexed { index, imageView -> imageView to paths[index] }
-
-            for ((iv, path) in pairs) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                    iv.transitionName = path
-                }
-                imageLoader.load(iv, path, centerCrop = false)
-                iv.setOnClickListener {
-                    launchImageViewerActivity(paths, ivs.indexOf(iv), pairs)
-                }
+        iv.setOnClickListener {
+            launch {
+                val result = postCoroutine<List<String>>(apiFailure, onFailure = { errno, msg ->
+                    Log.d(TAG, "onFailure:$errno")
+                    toast(msg)
+                })
+                Log.d(TAG, "${result}")
             }
-        })
+        }
     }
 }
 
-data class Config(
-        val serviceIMNumber: String?,
-        val xh_config_id: String?,
-        val hx_contact_group: String?,
-        val service_IM_number_for_teacher: String?,
-        val xh_config_id_for_teacher: String?,
-        val hx_contact_group_for_teacher: String?
+data class Student(
+        val name: String,
+        val courseId: Int,
+        val id: Int,
+        val order: Int,
+        val parentChapterId: Int,
+        val visible: Int,
+        val userControlSetTop: Boolean,
+        val children: List<String>
 )
 
-data class Model(val name: String?)
+data class Config(
+        val serviceIMNumber: String,
+        val xh_config_id: String,
+        val hx_contact_group: String,
+        val service_IM_number_for_teacher: String,
+        val xh_config_id_for_teacher: String,
+        val hx_contact_group_for_teacher: String
+)
+
+data class Model(val name: String)
 class Empty
 
 val aaa = Param("aaa", "")

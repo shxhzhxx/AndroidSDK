@@ -1,9 +1,9 @@
 package com.shxhzhxx.sdk.activity
 
 import android.app.Activity
-import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
-import com.google.gson.annotations.SerializedName
+import com.fasterxml.jackson.annotation.*
+import com.fasterxml.jackson.core.type.TypeReference
 import com.shxhzhxx.sdk.net
 import com.shxhzhxx.sdk.network.*
 import com.shxhzhxx.sdk.utils.toast
@@ -17,25 +17,33 @@ import kotlin.coroutines.resumeWithException
 private val activities = mutableListOf<WeakReference<Activity>>()
 
 data class Response<T>(
-        @SerializedName("errno", alternate = ["errorCode", "code"]) val errno: Int?,
-        @SerializedName("msg", alternate = ["tips", "errorMsg", "message"]) val msg: String?,
-        @SerializedName("data", alternate = ["jsondata"]) val data: T?
+        @JsonAlias("errorCode", "code") val errno: Int,
+        @JsonAlias("tips", "errorMsg", "message") val msg: String,
+        @JsonAlias("data", "jsondata") val raw: String?,
+        @JsonIgnore val data: T?
 ) {
     val isSuccessful get() = errno == 0
 }
 
-
 inline fun <reified T> FragmentActivity.post(url: String, params: JSONObject = net.defaultParams, postType: PostType = PostType.FORM,
                                              noinline onResponse: ((msg: String, data: T) -> Unit)? = null,
                                              noinline onFailure: ((errno: Int, msg: String) -> Unit)? = null) =
-        net.post<Response<T>>(url, url, params, lifecycle, postType,
+        net.post<Response<T>>(url, RequestKey(url, params), params, lifecycle, postType,
                 onResponse = { data ->
-                    when {
-                        data.msg == null || data.errno == null -> onFailure?.invoke(CODE_UNEXPECTED_RESPONSE, net.getMsg(CODE_UNEXPECTED_RESPONSE))
-                        !data.isSuccessful -> onFailure?.invoke(data.errno, data.msg)
-                        data.data !is T -> onFailure?.invoke(CODE_UNEXPECTED_RESPONSE, net.getMsg(CODE_UNEXPECTED_RESPONSE))
-                        else -> onResponse?.invoke(data.msg, data.data)
+                    when{
+                        !data.isSuccessful->onFailure?.invoke(data.errno, data.msg)
+                        data.data ==null -> onFailure?.invoke(CODE_UNEXPECTED_RESPONSE, net.getMsg(CODE_UNEXPECTED_RESPONSE))
+                        else -> onResponse?.invoke(data.msg,data.data)
                     }
+//                    if (!data.isSuccessful) {
+//                        onFailure?.invoke(data.errno, data.msg)
+//                    } else {
+//                        try {
+//                            onResponse?.invoke(data.msg, mapper.readValue(data.data, T::class.java))
+//                        } catch (e: Throwable) {
+//                            onFailure?.invoke(CODE_UNEXPECTED_RESPONSE, net.getMsg(CODE_UNEXPECTED_RESPONSE))
+//                        }
+//                    }
                 }, onFailure = onFailure)
 
 
@@ -48,15 +56,14 @@ suspend inline fun <reified T> FragmentActivity.postCoroutine(url: String, param
                                                                       else -> toast(msg)
                                                                   }
                                                               }): T {
-    var cancelRequest = false
+    var id: Int? = null
     return try {
         suspendCancellableCoroutine { continuation ->
-            cancelRequest = true
-            post<T>(url, params, postType, onResponse = { msg, data -> cancelRequest = false;onResponse?.invoke(msg, data);continuation.resume(data) },
-                    onFailure = { errno, msg -> cancelRequest = false;continuation.resumeWithException(InternalCancellationException(errno, msg)) })
+            id = post<T>(url, params, postType, onResponse = { msg, data -> id = null;onResponse?.invoke(msg, data);continuation.resume(data) },
+                    onFailure = { errno, msg -> id = null;continuation.resumeWithException(InternalCancellationException(errno, msg)) })
         }
     } catch (e: CancellationException) {
-        if (cancelRequest) net.cancel(url)
+        net.unregister(id ?: -1)
         if (e is InternalCancellationException)
             onFailure(e.errno, e.msg)
         else
