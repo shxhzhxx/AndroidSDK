@@ -1,9 +1,9 @@
 package com.shxhzhxx.sdk.activity
 
 import android.app.Activity
+import android.util.Log
 import androidx.fragment.app.FragmentActivity
-import com.fasterxml.jackson.annotation.*
-import com.fasterxml.jackson.core.type.TypeReference
+import com.fasterxml.jackson.annotation.JsonAlias
 import com.shxhzhxx.sdk.net
 import com.shxhzhxx.sdk.network.*
 import com.shxhzhxx.sdk.utils.toast
@@ -19,8 +19,7 @@ private val activities = mutableListOf<WeakReference<Activity>>()
 data class Response<T>(
         @JsonAlias("errorCode", "code") val errno: Int,
         @JsonAlias("tips", "errorMsg", "message") val msg: String,
-        @JsonAlias("data", "jsondata") val raw: String?,
-        @JsonIgnore val data: T?
+        @JsonAlias("jsondata") val data: T?
 ) {
     val isSuccessful get() = errno == 0
 }
@@ -30,20 +29,11 @@ inline fun <reified T> FragmentActivity.post(url: String, params: JSONObject = n
                                              noinline onFailure: ((errno: Int, msg: String) -> Unit)? = null) =
         net.post<Response<T>>(url, RequestKey(url, params), params, lifecycle, postType,
                 onResponse = { data ->
-                    when{
-                        !data.isSuccessful->onFailure?.invoke(data.errno, data.msg)
-                        data.data ==null -> onFailure?.invoke(CODE_UNEXPECTED_RESPONSE, net.getMsg(CODE_UNEXPECTED_RESPONSE))
-                        else -> onResponse?.invoke(data.msg,data.data)
+                    when {
+                        !data.isSuccessful -> onFailure?.invoke(data.errno, data.msg)
+                        data.data !is T -> onFailure?.invoke(CODE_UNEXPECTED_RESPONSE, net.getMsg(CODE_UNEXPECTED_RESPONSE))
+                        else -> onResponse?.invoke(data.msg, data.data)
                     }
-//                    if (!data.isSuccessful) {
-//                        onFailure?.invoke(data.errno, data.msg)
-//                    } else {
-//                        try {
-//                            onResponse?.invoke(data.msg, mapper.readValue(data.data, T::class.java))
-//                        } catch (e: Throwable) {
-//                            onFailure?.invoke(CODE_UNEXPECTED_RESPONSE, net.getMsg(CODE_UNEXPECTED_RESPONSE))
-//                        }
-//                    }
                 }, onFailure = onFailure)
 
 

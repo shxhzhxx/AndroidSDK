@@ -7,16 +7,14 @@ import android.util.Log
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.OnLifecycleEvent
-import com.fasterxml.jackson.annotation.JsonAlias
 import com.fasterxml.jackson.core.JsonParser
-import com.fasterxml.jackson.core.JsonToken
+import com.fasterxml.jackson.core.TreeNode
 import com.fasterxml.jackson.core.type.TypeReference
-import com.fasterxml.jackson.databind.DeserializationContext
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.deser.std.StringDeserializer
-import com.fasterxml.jackson.datatype.jsonorg.JSONArrayDeserializer
-import com.fasterxml.jackson.datatype.jsonorg.JSONObjectDeserializer
+import com.fasterxml.jackson.databind.*
+import com.fasterxml.jackson.databind.deser.BeanDeserializer
+import com.fasterxml.jackson.databind.deser.BeanDeserializerModifier
+import com.fasterxml.jackson.databind.deser.std.NumberDeserializers
+import com.fasterxml.jackson.databind.deser.std.StdDeserializer
 import com.fasterxml.jackson.datatype.jsonorg.JsonOrgModule
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
@@ -53,27 +51,42 @@ enum class PostType {
     FORM, JSON
 }
 
-open class JsonStringDeserializer : StringDeserializer() {
+class JsonStringDeserializer : StdDeserializer<String>(String::class.java) {
     override fun deserialize(p: JsonParser, ctxt: DeserializationContext): String {
-        return try {
-            super.deserialize(p, ctxt)
-        } catch (e: Throwable) {
-            when {
-                p.currentToken == JsonToken.START_OBJECT ->
-                    JSONObjectDeserializer.instance.deserialize(p, ctxt).toString()
-                p.currentToken == JsonToken.START_ARRAY ->
-                    JSONArrayDeserializer.instance.deserialize(p, ctxt).toString()
-                else -> throw e
-            }
-        }
+        return p.readValueAsTree<TreeNode>().toString()
     }
 }
 
 val mapper = ObjectMapper().apply {
     registerKotlinModule()
-    registerModule(JsonOrgModule().apply { addDeserializer(String::class.java, JsonStringDeserializer()) })
+    registerModule(JsonOrgModule().apply {
+        addDeserializer(String::class.java, JsonStringDeserializer())
+        setDeserializerModifier(object : BeanDeserializerModifier() {
+            override fun modifyDeserializer(
+                    config: DeserializationConfig,
+                    beanDesc: BeanDescription,
+                    deserializer: JsonDeserializer<*>
+            ): JsonDeserializer<*> {
+                if (deserializer is BeanDeserializer) {
+                    return object : BeanDeserializer(deserializer) {
+                        override fun deserialize(p: JsonParser?, ctxt: DeserializationContext?): Any? {
+                            return try {
+                                super.deserialize(p, ctxt)
+                            } catch (e: Throwable) {
+                                Log.e(TAG, "class:${beanDesc.beanClass.name}")
+                                Log.e(TAG, e.message)
+                                null
+                            }
+                        }
+                    }
+                }
+                return deserializer
+            }
+        })
+    })
     configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
     configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, true)
+    configure(DeserializationFeature.ACCEPT_EMPTY_ARRAY_AS_NULL_OBJECT, true)
 }
 
 class RequestKey(private val url: String, params: JSONObject) {
@@ -86,17 +99,6 @@ class RequestKey(private val url: String, params: JSONObject) {
         return url.hashCode() * 31 + _params.hashCode()
     }
 }
-
-data class ResponseHeader(
-        @JsonAlias("errorCode", "code") val errno: Int,
-        @JsonAlias("tips", "errorMsg", "message") val msg: String
-) {
-    val isSuccessful get() = errno == 0
-}
-
-data class ResponseData<T>(
-        @JsonAlias("jsondata") val data: T
-)
 
 class InternalCancellationException(val errno: Int, val msg: String) : CancellationException()
 
@@ -159,7 +161,7 @@ class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: Any?) 
                 }
             }
 
-    inline fun <reified T> post(url: String, key: Any, params: JSONObject = defaultParams, lifecycle: Lifecycle? = null, postType: PostType = PostType.FORM,
+    inline fun <reified T> post(url: String, key: Any = UUID.randomUUID(), params: JSONObject = defaultParams, lifecycle: Lifecycle? = null, postType: PostType = PostType.FORM,
                                 noinline onResponse: ((data: T) -> Unit)? = null,
                                 noinline onFailure: ((errno: Int, msg: String) -> Unit)? = null): Int {
         if (params != defaultParams) {
@@ -184,7 +186,7 @@ class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: Any?) 
         }.build(), lifecycle, onResponse, onFailure)
     }
 
-    suspend inline fun <reified T> postCoroutine(url: String, key: Any, params: JSONObject = defaultParams, lifecycle: Lifecycle? = null, postType: PostType = PostType.FORM,
+    suspend inline fun <reified T> postCoroutine(url: String, key: Any = UUID.randomUUID(), params: JSONObject = defaultParams, lifecycle: Lifecycle? = null, postType: PostType = PostType.FORM,
                                                  noinline onFailure: ((errno: Int, msg: String) -> Unit)? = null): T {
         var cancelRequest = false
         return try {
@@ -203,13 +205,13 @@ class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: Any?) 
         }
     }
 
-    inline fun <reified T> postFile(url: String, key: Any, lifecycle: Lifecycle? = null, file: File,
+    inline fun <reified T> postFile(url: String, key: Any = UUID.randomUUID(), lifecycle: Lifecycle? = null, file: File,
                                     noinline onResponse: ((data: T) -> Unit)? = null,
                                     noinline onFailure: ((errno: Int, msg: String) -> Unit)? = null) =
             inlineRequest(key, Request.Builder().url(url).post(RequestBody.create(DATA_TYPE_FILE, file)).build(), lifecycle, onResponse, onFailure)
 
 
-    inline fun <reified T> postMultipartForm(url: String, key: Any, lifecycle: Lifecycle? = null, files: List<Pair<String, File>> = emptyList(),
+    inline fun <reified T> postMultipartForm(url: String, key: Any = UUID.randomUUID(), lifecycle: Lifecycle? = null, files: List<Pair<String, File>> = emptyList(),
                                              noinline onParams: ((params: JSONObject) -> JSONObject)? = null,
                                              noinline onResponse: ((data: T) -> Unit)? = null,
                                              noinline onFailure: ((errno: Int, msg: String) -> Unit)? = null): Int {
@@ -225,8 +227,7 @@ class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: Any?) 
         return inlineRequest(key, Request.Builder().url(url).post(builder.build()).build(), lifecycle, onResponse, onFailure)
     }
 
-    private inner class Worker<T>(key: Any, private val request: Request, private val type: TypeReference<T>,
-                                  private val wrap: Boolean = true) : Task(key) {
+    private inner class Worker<T>(key: Any, private val request: Request, private val type: TypeReference<T>) : Task(key) {
         override fun onCancel() {
             observers.forEach { it?.invoke(CODE_CANCELED, getMsg(CODE_CANCELED), null) }
         }
@@ -256,7 +257,9 @@ class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: Any?) 
                     }
                 }
                 try {
-                    return@run CODE_OK to mapper.readValue<T>(raw, type).also {
+                    return@run CODE_OK to mapper.readValue<T>(raw, type).also { data ->
+                        if (data !is T)
+                            throw JSONException("JSONException")
                         if (debugMode) {
                             Log.d(TAG, "${request.url()} response:")
                             formatJsonString(raw).split('\n').forEach { Log.d(TAG, it) }

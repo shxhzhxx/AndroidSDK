@@ -5,11 +5,14 @@ import android.os.Bundle
 import android.util.Log
 import com.shxhzhxx.sdk.activity.DownloadActivity
 import com.shxhzhxx.sdk.activity.fullscreen
+import com.shxhzhxx.sdk.activity.post
 import com.shxhzhxx.sdk.activity.postCoroutine
+import com.shxhzhxx.sdk.net
 import com.shxhzhxx.sdk.utils.Param
 import com.shxhzhxx.sdk.utils.toast
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.coroutines.launch
+import org.json.JSONObject
 
 const val TAG = "MainActivity"
 
@@ -33,6 +36,12 @@ const val api4 = "https://static.usasishu.com/empty.txt"
 const val apiJson = "https://image.yizhujiao.com/testApi2.txt"
 const val apiStringArr = "https://image.yizhujiao.com/stringArrApi.txt"
 const val apiFailure = "https://static.usasishu.com/failureApi.txt"
+const val apiFailure2 = "https://static.usasishu.com/failureApi2.txt"
+const val apiFailure3 = "https://static.usasishu.com/failureApi3.txt"
+const val apiFailure5 = "https://static.usasishu.com/failureApi5.txt"
+const val config = "https://static.usasishu.com/config.txt"
+const val testApi3 = "https://static.usasishu.com/testApi3.txt"
+const val emptySuccess = "https://static.usasishu.com/emptySuccess.txt"
 
 class MainActivity : DownloadActivity() {
 
@@ -46,11 +55,14 @@ class MainActivity : DownloadActivity() {
 
         iv.setOnClickListener {
             launch {
-                val result = postCoroutine<List<String>>(apiFailure, onFailure = { errno, msg ->
-                    Log.d(TAG, "onFailure:$errno")
+                post<Unit?>(emptySuccess,onResponse = { msg, _ ->
                     toast(msg)
                 })
-                Log.d(TAG, "${result}")
+//                val result = postCoroutine<Unit?>(emptySuccess, onFailure = { errno, msg ->
+//                    Log.d(TAG, "onFailure:$errno")
+//                    toast(msg)
+//                })
+//                Log.d(TAG, "success:${result}")
             }
         }
     }
@@ -73,7 +85,17 @@ data class Config(
         val hx_contact_group: String,
         val service_IM_number_for_teacher: String,
         val xh_config_id_for_teacher: String,
-        val hx_contact_group_for_teacher: String
+        val hx_contact_group_for_teacher: String,
+        val nest: Nest? = Nest(1, 1, 2),
+        val bool:Boolean,
+
+        val hasService: Boolean = !serviceIMNumber.isBlank()
+)
+
+data class Nest(
+        val a: Int,
+        val b: Int,
+        val c: Int
 )
 
 data class Model(val name: String)
