@@ -1,13 +1,38 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fitsSystemWindows="false"
-    android:background="#ffffff">
+    android:background="#000000">
 
     <com.shxhzhxx.sdk.ui.HackyViewPager
         android:id="@+id/pager"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"/>
+        android:layout_height="match_parent" />
+
+    <TextView
+        android:id="@+id/indicator"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="25dp"
+        android:text="1/9"
+        android:textColor="#ffffff"
+        android:textSize="16sp" />
+
+    <ImageView
+        android:id="@+id/share"
+        android:src="@drawable/icon_share"
+        android:layout_gravity="end"
+        android:padding="25dp"
+        android:layout_width="70dp"
+        android:adjustViewBounds="true"
+        android:layout_height="wrap_content" />
+
+    <ImageView
+        android:id="@+id/download"
+        android:src="@drawable/icon_download"
+        android:layout_gravity="end|bottom"
+        android:padding="25dp"
+        android:layout_width="70dp"
+        android:adjustViewBounds="true"
+        android:layout_height="wrap_content" />
 </FrameLayout>

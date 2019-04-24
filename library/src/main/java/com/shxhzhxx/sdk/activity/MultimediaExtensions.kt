@@ -161,32 +161,40 @@ suspend fun Uri.toFileCoroutine(context: Context, dst: File? = null, onFailure: 
     }
 }
 
-fun InputStream.toFile(dst: File, isCancelled: (() -> Boolean)? = null) {
+fun InputStream.toFile(dst: File, isCancelled: ((onCancel: () -> Unit) -> Boolean)? = null) {
     dst.outputStream().use { output ->
         val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
         var bytes = read(buffer)
-        while (bytes >= 0 && isCancelled?.invoke() != true) {
+        while (bytes >= 0 && isCancelled?.invoke {} != true) {
             output.write(buffer, 0, bytes)
             bytes = read(buffer)
         }
     }
 }
 
-suspend fun <T> convert(onFailure: (() -> Unit)? = null, worker: (isCancelled: () -> Boolean) -> T) = coroutineScope<T> {
-    var cancel = false
-    return@coroutineScope try {
-        suspendCancellableCoroutine {
-            launch(Dispatchers.IO) {
-                try {
-                    it.resume(worker { cancel })
-                } catch (e: Throwable) {
-                    it.resumeWithException(CancellationException())
+suspend fun <T> convert(onFailure: (() -> Unit)? = null, worker: (handler: (onCancel: () -> Unit) -> Boolean) -> T) =
+        coroutineScope<T> {
+            var isCancelled = false
+            var onCancel: () -> Unit = {}
+            val handler: (handler: () -> Unit) -> Boolean = {
+                onCancel = it
+                isCancelled
+            }
+            return@coroutineScope try {
+                suspendCancellableCoroutine {
+                    launch(Dispatchers.IO) {
+                        try {
+                            it.resume(worker(handler))
+                        } catch (e: Throwable) {
+                            e.printStackTrace()
+                            it.resumeWithException(CancellationException())
+                        }
+                    }
                 }
+            } catch (e: CancellationException) {
+                isCancelled = true
+                onCancel()
+                onFailure?.invoke()
+                throw e
             }
         }
-    } catch (e: CancellationException) {
-        cancel = true
-        onFailure?.invoke()
-        throw e
-    }
-}

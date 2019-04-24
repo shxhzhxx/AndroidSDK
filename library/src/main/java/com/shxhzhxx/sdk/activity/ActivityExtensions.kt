@@ -1,7 +1,6 @@
 package com.shxhzhxx.sdk.activity
 
 import android.app.Activity
-import android.util.Log
 import androidx.fragment.app.FragmentActivity
 import com.fasterxml.jackson.annotation.JsonAlias
 import com.shxhzhxx.sdk.net
@@ -24,7 +23,7 @@ data class Response<T>(
     val isSuccessful get() = errno == 0
 }
 
-inline fun <reified T> FragmentActivity.post(url: String, params: JSONObject = net.defaultParams, postType: PostType = PostType.FORM,
+inline fun <reified T> FragmentActivity.post(url: String, params: JSONObject? = null, postType: PostType = PostType.FORM,
                                              noinline onResponse: ((msg: String, data: T) -> Unit)? = null,
                                              noinline onFailure: ((errno: Int, msg: String) -> Unit)? = null) =
         net.post<Response<T>>(url, RequestKey(url, params), params, lifecycle, postType,
@@ -37,7 +36,7 @@ inline fun <reified T> FragmentActivity.post(url: String, params: JSONObject = n
                 }, onFailure = onFailure)
 
 
-suspend inline fun <reified T> FragmentActivity.postCoroutine(url: String, params: JSONObject = net.defaultParams, postType: PostType = PostType.FORM,
+suspend inline fun <reified T> FragmentActivity.postCoroutine(url: String, params: JSONObject? = null, postType: PostType = PostType.FORM,
                                                               noinline onResponse: ((msg: String, data: T) -> Unit)? = null,
                                                               onFailure: (errno: Int, msg: String) -> Unit = { errno, msg ->
                                                                   when (errno) {

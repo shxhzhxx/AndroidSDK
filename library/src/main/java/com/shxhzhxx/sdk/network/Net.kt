@@ -8,13 +8,14 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.OnLifecycleEvent
 import com.fasterxml.jackson.core.JsonParser
-import com.fasterxml.jackson.core.TreeNode
+import com.fasterxml.jackson.core.JsonToken
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.*
 import com.fasterxml.jackson.databind.deser.BeanDeserializer
 import com.fasterxml.jackson.databind.deser.BeanDeserializerModifier
-import com.fasterxml.jackson.databind.deser.std.NumberDeserializers
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer
+import com.fasterxml.jackson.databind.deser.std.StringDeserializer
+import com.fasterxml.jackson.datatype.jsonorg.JSONArrayDeserializer
+import com.fasterxml.jackson.datatype.jsonorg.JSONObjectDeserializer
 import com.fasterxml.jackson.datatype.jsonorg.JsonOrgModule
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
@@ -51,9 +52,19 @@ enum class PostType {
     FORM, JSON
 }
 
-class JsonStringDeserializer : StdDeserializer<String>(String::class.java) {
+open class JsonStringDeserializer : StringDeserializer() {
     override fun deserialize(p: JsonParser, ctxt: DeserializationContext): String {
-        return p.readValueAsTree<TreeNode>().toString()
+        return try {
+            super.deserialize(p, ctxt)
+        } catch (e: Throwable) {
+            when {
+                p.currentToken == JsonToken.START_OBJECT ->
+                    JSONObjectDeserializer.instance.deserialize(p, ctxt).toString()
+                p.currentToken == JsonToken.START_ARRAY ->
+                    JSONArrayDeserializer.instance.deserialize(p, ctxt).toString()
+                else -> throw e
+            }
+        }
     }
 }
 
@@ -89,8 +100,8 @@ val mapper = ObjectMapper().apply {
     configure(DeserializationFeature.ACCEPT_EMPTY_ARRAY_AS_NULL_OBJECT, true)
 }
 
-class RequestKey(private val url: String, params: JSONObject) {
-    private val _params = mapper.readValue<Map<String, Any>>(params.toString())
+class RequestKey(private val url: String, params: JSONObject?) {
+    private val _params = mapper.readValue<Map<String, Any>>((params ?: JSONObject()).toString())
     override fun equals(other: Any?): Boolean {
         return hashCode() == other?.hashCode()
     }
@@ -121,7 +132,7 @@ class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: Any?) 
             .connectTimeout(5, TimeUnit.SECONDS)
             .build()
     private val lifecycleSet = HashSet<Lifecycle>()
-    var defaultParams = JSONObject()
+    var commonParams: (JSONObject) -> JSONObject = { it }
 
     val isNetworkAvailable get() = connMgr.activeNetworkInfo?.isConnected == true
     val isWifiAvailable get() = isNetworkAvailable && connMgr.activeNetworkInfo.type == ConnectivityManager.TYPE_WIFI
@@ -161,32 +172,28 @@ class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: Any?) 
                 }
             }
 
-    inline fun <reified T> post(url: String, key: Any = UUID.randomUUID(), params: JSONObject = defaultParams, lifecycle: Lifecycle? = null, postType: PostType = PostType.FORM,
+    inline fun <reified T> post(url: String, key: Any = UUID.randomUUID(), params: JSONObject? = null, lifecycle: Lifecycle? = null, postType: PostType = PostType.FORM,
                                 noinline onResponse: ((data: T) -> Unit)? = null,
                                 noinline onFailure: ((errno: Int, msg: String) -> Unit)? = null): Int {
-        if (params != defaultParams) {
-            for (k in defaultParams.keys()) {
-                if (!params.has(k)) params.put(k, defaultParams.get(k))
-            }
-        }
+        val parameters = commonParams(params ?: JSONObject())
         return inlineRequest(key, Request.Builder().also { builder ->
             builder.url(url)
             if (debugMode) {
                 Log.d(TAG, "$url request:")
             }
-            if (params.length() > 0) {
+            if (parameters.length() > 0) {
                 when (postType) {
-                    PostType.FORM -> builder.post(RequestBody.create(DATA_TYPE_FORM, formatJsonToForm(params)))
-                    PostType.JSON -> builder.post(RequestBody.create(DATA_TYPE_JSON, params.toString()))
+                    PostType.FORM -> builder.post(RequestBody.create(DATA_TYPE_FORM, formatJsonToForm(parameters)))
+                    PostType.JSON -> builder.post(RequestBody.create(DATA_TYPE_JSON, parameters.toString()))
                 }
                 if (debugMode) {
-                    formatJsonString(params.toString()).split('\n').forEach { Log.d(TAG, it) }
+                    formatJsonString(parameters.toString()).split('\n').forEach { Log.d(TAG, it) }
                 }
             }
         }.build(), lifecycle, onResponse, onFailure)
     }
 
-    suspend inline fun <reified T> postCoroutine(url: String, key: Any = UUID.randomUUID(), params: JSONObject = defaultParams, lifecycle: Lifecycle? = null, postType: PostType = PostType.FORM,
+    suspend inline fun <reified T> postCoroutine(url: String, key: Any = UUID.randomUUID(), params: JSONObject? = null, lifecycle: Lifecycle? = null, postType: PostType = PostType.FORM,
                                                  noinline onFailure: ((errno: Int, msg: String) -> Unit)? = null): T {
         var cancelRequest = false
         return try {

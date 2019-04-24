@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="AutoSizeAlertDialog" parent="Theme.AppCompat.Light.Dialog.Alert">
-        <item name="android:windowMinWidthMinor">300dp</item>
-        <item name="windowFixedWidthMinor">300dp</item>
+        <item name="android:windowMinWidthMinor">@dimen/dialog_min_width_minor</item>
     </style>
     <style name="whiteProgressBar" parent="Widget.AppCompat.ProgressBar">
         <!-- Customize your theme here. -->

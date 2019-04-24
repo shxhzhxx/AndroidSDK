@@ -2,6 +2,7 @@ package com.shxhzhxx.sdk.activity
 
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.ActivityOptions
 import android.content.Intent
 import android.os.Build
@@ -9,7 +10,6 @@ import android.os.Bundle
 import android.util.Log
 import android.view.View
 import android.view.ViewGroup
-import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.FragmentActivity
 import androidx.viewpager.widget.PagerAdapter
 import androidx.viewpager.widget.ViewPager
@@ -17,10 +17,13 @@ import com.github.chrisbanes.photoview.PhotoView
 import com.shxhzhxx.sdk.R
 import com.shxhzhxx.sdk.imageLoader
 import com.shxhzhxx.sdk.utils.copyTo
+import com.shxhzhxx.sdk.utils.loadCoroutine
 import com.shxhzhxx.sdk.utils.toast
 import kotlinx.android.synthetic.main.activity_image_viewer.*
+import kotlinx.coroutines.launch
 import java.io.File
 import java.util.*
+import kotlin.collections.ArrayList
 
 private const val TAG = "ImageViewerActivity"
 
@@ -42,14 +45,14 @@ fun FragmentActivity.launchImageViewerActivity(paths: List<String>, position: In
     }
 }
 
-class ImageViewerActivity : ForResultActivity(), View.OnClickListener, View.OnLongClickListener {
+class ImageViewerActivity : ForResultActivity(), View.OnClickListener {
     private val paths by lazy { intent.getStringArrayListExtra("paths") }
     private val cache = Stack<PhotoView>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            fullscreen(lightStatusBar = true)
+            fullscreen(hideStatusBar = false, lightStatusBar = false)
         }
         setContentView(R.layout.activity_image_viewer)
 
@@ -59,10 +62,26 @@ class ImageViewerActivity : ForResultActivity(), View.OnClickListener, View.OnLo
             return
         }
 
+        indicator.visibility = if (paths.size < 2) View.INVISIBLE else View.VISIBLE
         var transition = intent.getBooleanExtra("transition", false)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && transition) {
             supportPostponeEnterTransition()
             pager.transitionName = paths[position]
+        }
+        share.setOnClickListener {
+            launch {
+                val file = paths[pager.currentItem].toFile()
+                startActivity(Intent.createChooser(Intent().apply {
+                    action = Intent.ACTION_SEND
+                    putExtra(Intent.EXTRA_STREAM, exposeUriForFile(file))
+                    type = "image/*"
+                }, getString(R.string.share_picture)))
+            }
+        }
+        download.setOnClickListener {
+            requestPermissions(listOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), onGrant = {
+                launch { paths[pager.currentItem].toFile().saveImage() }
+            })
         }
         pager.offscreenPageLimit = 2
         pager.adapter = object : PagerAdapter() {
@@ -76,17 +95,16 @@ class ImageViewerActivity : ForResultActivity(), View.OnClickListener, View.OnLo
                 } catch (e: EmptyStackException) {
                     PhotoView(this@ImageViewerActivity).also { v ->
                         v.setOnClickListener(this@ImageViewerActivity)
-                        v.setOnLongClickListener(this@ImageViewerActivity)
                     }
                 }
 
                 val path = paths[position]
                 if (transition) {
                     transition = false
-                    imageLoader.load(view, path, centerCrop = false,
-                            onLoad = { supportStartPostponedEnterTransition() },
-                            onFailure = { supportStartPostponedEnterTransition() },
-                            onCancel = { supportStartPostponedEnterTransition() })
+                    launch {
+                        imageLoader.loadCoroutine(view, path, centerCrop = false)
+                        supportStartPostponedEnterTransition()
+                    }
                 } else {
                     imageLoader.load(view, path, centerCrop = false)
                 }
@@ -104,6 +122,8 @@ class ImageViewerActivity : ForResultActivity(), View.OnClickListener, View.OnLo
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                     pager.transitionName = paths[position]
                 }
+                @SuppressLint("SetTextI18n")
+                indicator.text = "${position + 1}/${paths.size}"
             }
         })
         pager.currentItem = position
@@ -113,27 +133,23 @@ class ImageViewerActivity : ForResultActivity(), View.OnClickListener, View.OnLo
         onBackPressed()
     }
 
-    override fun onLongClick(v: View): Boolean {
-        AlertDialog.Builder(v.context, R.style.AutoSizeAlertDialog).setItems(arrayOf(getString(R.string.save_image_to_sdcard))) { _, _ ->
-            requestPermissions(listOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), onGrant = {
-                val path = paths[pager.currentItem]
-                val f = File(path)
-                if (f.exists()) {
-                    saveImage(f)
-                } else {
-                    imageLoader.bitmapLoader.urlLoader.load(path, onLoad = { saveImage(it) })
-                }
-            })
-        }.create().show()
-        return true
+    private suspend fun String.toFile(): File {
+        val file = File(this)
+        if (file.exists())
+            return file
+        return imageLoader.bitmapLoader.urlLoader.loadCoroutine(this)
     }
 
-    private fun saveImage(file: File) {
-        val dst = createPictureFile()
-                ?: run { toast(getString(R.string.unavailable_external_storage));return }
-        if (file copyTo dst) {
-            mediaScanFile(dst)
-            toast(getString(R.string.image_saved_format, dst.absolutePath))
+    private suspend fun File.saveImage() {
+        convert {
+            val dst = createPictureFile()
+                    ?: run { runOnUiThread { toast(getString(R.string.unavailable_external_storage)) };return@convert }
+            if (this copyTo dst) {
+                runOnUiThread {
+                    mediaScanFile(dst)
+                    toast(getString(R.string.picture_saved_format, dst.absolutePath))
+                }
+            }
         }
     }
 }

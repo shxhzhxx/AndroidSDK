@@ -1,18 +1,15 @@
 package com.shxhzhxx.app
 
+import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import com.shxhzhxx.sdk.activity.DownloadActivity
 import com.shxhzhxx.sdk.activity.fullscreen
-import com.shxhzhxx.sdk.activity.post
-import com.shxhzhxx.sdk.activity.postCoroutine
-import com.shxhzhxx.sdk.net
+import com.shxhzhxx.sdk.activity.launchImageViewerActivity
+import com.shxhzhxx.sdk.activity.setStatusBarColor
+import com.shxhzhxx.sdk.imageLoader
 import com.shxhzhxx.sdk.utils.Param
-import com.shxhzhxx.sdk.utils.toast
 import kotlinx.android.synthetic.main.activity_main.*
-import kotlinx.coroutines.launch
-import org.json.JSONObject
 
 const val TAG = "MainActivity"
 
@@ -50,19 +47,19 @@ class MainActivity : DownloadActivity() {
         setContentView(R.layout.activity_main)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            fullscreen()
+            setStatusBarColor(Color.WHITE)
         }
 
-        iv.setOnClickListener {
-            launch {
-                post<Unit?>(emptySuccess,onResponse = { msg, _ ->
-                    toast(msg)
-                })
-//                val result = postCoroutine<Unit?>(emptySuccess, onFailure = { errno, msg ->
-//                    Log.d(TAG, "onFailure:$errno")
-//                    toast(msg)
-//                })
-//                Log.d(TAG, "success:${result}")
+        val ivs = listOf(iv1, iv2, iv3, iv4, iv5)
+        val paths = listOf(u1, u2, u3, u4, u5)
+        val pairs = ivs.mapIndexed { index, imageView -> imageView to paths[index] }
+        ivs.forEachIndexed { index, imageView ->
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                imageView.transitionName = paths[index]
+            }
+            imageLoader.load(imageView,paths[index],centerCrop = false)
+            imageView.setOnClickListener {
+                launchImageViewerActivity(paths, index, pairs)
             }
         }
     }
@@ -87,7 +84,7 @@ data class Config(
         val xh_config_id_for_teacher: String,
         val hx_contact_group_for_teacher: String,
         val nest: Nest? = Nest(1, 1, 2),
-        val bool:Boolean,
+        val bool: Boolean,
 
         val hasService: Boolean = !serviceIMNumber.isBlank()
 )
