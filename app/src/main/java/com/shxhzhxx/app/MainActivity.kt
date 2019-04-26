@@ -109,6 +109,7 @@ data class Config(
 data class WrapNode(val text: String)
 data class IntNode(val int:Int)
 
+data class Wrap2<T,V>(val a: T, val b: V)
 data class Wrap<T, V>(val a: T, val b: V)
 
 
@@ -116,13 +117,13 @@ inline fun <reified T> wwwrapResolve(raw: String) =
         wwrapResolve<Wrap<T, Wrap<T, T>>, WrapNode>(raw)
 
 inline fun <reified T, reified V> wwrapResolve(raw: String) =
-        wrapResolve<Wrap<T, V>, V>(raw)
+        wrapResolve<Wrap2<T, V>, V>(raw)
 
 inline fun <reified T, reified V> wrapResolve(raw: String) =
         resolve<Wrap<T, V>>(raw, TypeFactory.defaultInstance().constructParametricType(Wrap::class.java, T::class.java, V::class.java)).let { it.a to it.b }
 
 inline fun <reified T> resolve(raw: String, type: JavaType) =
-        mapper.readValue<T>(raw, TypeFactory.defaultInstance().constructParametricType(Wrap::class.java,T::class.java))
+        mapper.readValue<T>(raw, type)
 
 
 //inline fun <reified T> wwrapResolve(raw: String) = wrapResolve<Wrap<T>>(raw, TypeFactory.defaultInstance().constructParametricType(Wrap::class.java, T::class.java)).data

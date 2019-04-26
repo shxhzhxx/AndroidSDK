@@ -26,7 +26,7 @@ data class Response<T>(
 inline fun <reified T> FragmentActivity.post(url: String, params: JSONObject? = null, postType: PostType = PostType.FORM,
                                              noinline onResponse: ((msg: String, data: T) -> Unit)? = null,
                                              noinline onFailure: ((errno: Int, msg: String) -> Unit)? = null) =
-        net.post<Response<T>>(url, RequestKey(url, params), params, lifecycle, postType,
+        net.post<Response<T>>(url, params, lifecycle, postType,
                 onResponse = { data ->
                     when {
                         !data.isSuccessful -> onFailure?.invoke(data.errno, data.msg)

@@ -15,9 +15,6 @@ import com.fasterxml.jackson.databind.*
 import com.fasterxml.jackson.databind.deser.BeanDeserializer
 import com.fasterxml.jackson.databind.deser.BeanDeserializerModifier
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer
-import com.fasterxml.jackson.databind.type.TypeFactory
-import com.fasterxml.jackson.datatype.jsonorg.JSONArrayDeserializer
-import com.fasterxml.jackson.datatype.jsonorg.JSONObjectDeserializer
 import com.fasterxml.jackson.datatype.jsonorg.JsonOrgModule
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
@@ -62,21 +59,21 @@ open class StringDeserializer : StdDeserializer<String>(String::class.java) {
     }
 }
 
-open class JsonStringDeserializer : com.fasterxml.jackson.databind.deser.std.StringDeserializer() {
-    override fun deserialize(p: JsonParser, ctxt: DeserializationContext): String {
-        return try {
-            super.deserialize(p, ctxt)
-        } catch (e: Throwable) {
-            when {
-                p.currentToken == JsonToken.START_OBJECT ->
-                    JSONObjectDeserializer.instance.deserialize(p, ctxt).toString()
-                p.currentToken == JsonToken.START_ARRAY ->
-                    JSONArrayDeserializer.instance.deserialize(p, ctxt).toString()
-                else -> throw e
-            }
-        }
-    }
-}
+//open class JsonStringDeserializer : com.fasterxml.jackson.databind.deser.std.StringDeserializer() {
+//    override fun deserialize(p: JsonParser, ctxt: DeserializationContext): String {
+//        return try {
+//            super.deserialize(p, ctxt)
+//        } catch (e: Throwable) {
+//            when {
+//                p.currentToken == JsonToken.START_OBJECT ->
+//                    JSONObjectDeserializer.instance.deserialize(p, ctxt).toString()
+//                p.currentToken == JsonToken.START_ARRAY ->
+//                    JSONArrayDeserializer.instance.deserialize(p, ctxt).toString()
+//                else -> throw e
+//            }
+//        }
+//    }
+//}
 
 val mapper = ObjectMapper().apply {
     registerKotlinModule()
@@ -180,11 +177,11 @@ class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: Any?) 
                 }
             }
 
-    inline fun <reified T> post(url: String, key: Any = UUID.randomUUID(), params: JSONObject? = null, lifecycle: Lifecycle? = null, postType: PostType = PostType.FORM,
+    inline fun <reified T> post(url: String, params: JSONObject? = null, lifecycle: Lifecycle? = null, postType: PostType = PostType.FORM,
                                 noinline onResponse: ((data: T) -> Unit)? = null,
                                 noinline onFailure: ((errno: Int, msg: String) -> Unit)? = null): Int {
         val parameters = commonParams(params ?: JSONObject())
-        return inlineRequest(key, Request.Builder().also { builder ->
+        return inlineRequest(RequestKey(url, params), Request.Builder().also { builder ->
             builder.url(url)
             if (debugMode) {
                 Log.d(TAG, "$url request:")
@@ -201,17 +198,16 @@ class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: Any?) 
         }.build(), lifecycle, onResponse, onFailure)
     }
 
-    suspend inline fun <reified T> postCoroutine(url: String, key: Any = UUID.randomUUID(), params: JSONObject? = null, lifecycle: Lifecycle? = null, postType: PostType = PostType.FORM,
+    suspend inline fun <reified T> postCoroutine(url: String, params: JSONObject? = null,lifecycle: Lifecycle? = null, postType: PostType = PostType.FORM,
                                                  noinline onFailure: ((errno: Int, msg: String) -> Unit)? = null): T {
-        var cancelRequest = false
+        var id: Int? = null
         return try {
             suspendCancellableCoroutine { continuation ->
-                cancelRequest = true
-                post<T>(url, key, params, lifecycle, postType, onResponse = { cancelRequest = false;continuation.resume(it) },
-                        onFailure = { errno, msg -> cancelRequest = false;continuation.resumeWithException(InternalCancellationException(errno, msg)) })
+                id = post<T>(url, params, lifecycle, postType, onResponse = { id = null;continuation.resume(it) },
+                        onFailure = { errno, msg -> id = null;continuation.resumeWithException(InternalCancellationException(errno, msg)) })
             }
         } catch (e: CancellationException) {
-            if (cancelRequest) cancel(key)
+            unregister(id ?: -1)
             if (e is InternalCancellationException)
                 onFailure?.invoke(e.errno, e.msg)
             else
@@ -220,24 +216,23 @@ class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: Any?) 
         }
     }
 
-    inline fun <reified T> postFile(url: String, key: Any = UUID.randomUUID(), lifecycle: Lifecycle? = null, file: File,
+    inline fun <reified T> postFile(url: String, lifecycle: Lifecycle? = null, file: File,
                                     noinline onResponse: ((data: T) -> Unit)? = null,
                                     noinline onFailure: ((errno: Int, msg: String) -> Unit)? = null) =
-            inlineRequest(key, Request.Builder().url(url).post(RequestBody.create(DATA_TYPE_FILE, file)).build(), lifecycle, onResponse, onFailure)
+            inlineRequest(file, Request.Builder().url(url).post(RequestBody.create(DATA_TYPE_FILE, file)).build(), lifecycle, onResponse, onFailure)
 
 
     inline fun <reified T> postMultipartForm(url: String, key: Any = UUID.randomUUID(), lifecycle: Lifecycle? = null, files: List<Pair<String, File>> = emptyList(),
-                                             noinline onParams: ((params: JSONObject) -> JSONObject)? = null,
+                                             params: JSONObject? = null,
                                              noinline onResponse: ((data: T) -> Unit)? = null,
                                              noinline onFailure: ((errno: Int, msg: String) -> Unit)? = null): Int {
         val builder = MultipartBody.Builder().setType(MultipartBody.FORM)
         for ((name, file) in files) {
             builder.addFormDataPart(name, file.name, RequestBody.create(DATA_TYPE_FILE, file))
         }
-        onParams?.invoke(JSONObject())?.let { params ->
-            for (k in params.keys()) {
-                builder.addFormDataPart(k, params.getString(k))
-            }
+        val parameters = commonParams(params ?: JSONObject())
+        for (k in parameters.keys()) {
+            builder.addFormDataPart(k, parameters.getString(k))
         }
         return inlineRequest(key, Request.Builder().url(url).post(builder.build()).build(), lifecycle, onResponse, onFailure)
     }
