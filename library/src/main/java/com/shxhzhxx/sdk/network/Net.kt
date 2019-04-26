@@ -9,11 +9,13 @@ import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.OnLifecycleEvent
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.core.JsonToken
+import com.fasterxml.jackson.core.TreeNode
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.*
 import com.fasterxml.jackson.databind.deser.BeanDeserializer
 import com.fasterxml.jackson.databind.deser.BeanDeserializerModifier
-import com.fasterxml.jackson.databind.deser.std.StringDeserializer
+import com.fasterxml.jackson.databind.deser.std.StdDeserializer
+import com.fasterxml.jackson.databind.type.TypeFactory
 import com.fasterxml.jackson.datatype.jsonorg.JSONArrayDeserializer
 import com.fasterxml.jackson.datatype.jsonorg.JSONObjectDeserializer
 import com.fasterxml.jackson.datatype.jsonorg.JsonOrgModule
@@ -52,7 +54,15 @@ enum class PostType {
     FORM, JSON
 }
 
-open class JsonStringDeserializer : StringDeserializer() {
+open class StringDeserializer : StdDeserializer<String>(String::class.java) {
+    override fun deserialize(p: JsonParser, ctxt: DeserializationContext): String {
+        if (p.currentToken() == JsonToken.VALUE_STRING)
+            return p.valueAsString
+        return p.readValueAsTree<TreeNode>().toString()
+    }
+}
+
+open class JsonStringDeserializer : com.fasterxml.jackson.databind.deser.std.StringDeserializer() {
     override fun deserialize(p: JsonParser, ctxt: DeserializationContext): String {
         return try {
             super.deserialize(p, ctxt)
@@ -71,7 +81,7 @@ open class JsonStringDeserializer : StringDeserializer() {
 val mapper = ObjectMapper().apply {
     registerKotlinModule()
     registerModule(JsonOrgModule().apply {
-        addDeserializer(String::class.java, JsonStringDeserializer())
+        addDeserializer(String::class.java, StringDeserializer())
         setDeserializerModifier(object : BeanDeserializerModifier() {
             override fun modifyDeserializer(
                     config: DeserializationConfig,
@@ -84,8 +94,6 @@ val mapper = ObjectMapper().apply {
                             return try {
                                 super.deserialize(p, ctxt)
                             } catch (e: Throwable) {
-                                Log.e(TAG, "class:${beanDesc.beanClass.name}")
-                                Log.e(TAG, e.message)
                                 null
                             }
                         }
