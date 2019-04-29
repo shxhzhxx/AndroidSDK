@@ -267,7 +267,7 @@ class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: Any?) 
         override fun doInBackground() {
             val call = okHttpClient.newCall(request)
             val (errno: Int, msg: String?, data: T?) = run {
-                var raw: String = try {
+                val raw: String = try {
                     call.execute()
                 } catch (e: IOException) {
                     Log.e(TAG, "execute IOException: ${e.message}")
@@ -285,21 +285,19 @@ class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: Any?) 
                     }
                 }
                 try {
-                    if (wrap) {
+                    return@run (if (wrap) {
                         val response = mapper.readValue<Response>(raw)
-                        if (!response.isSuccessful) {
-                            return@run Triple(response.errno, response.msg, null)
+                        if (!response.isSuccessful || response.data.isNullOrBlank()) {
+                            Triple(response.errno, response.msg, null)
+                        } else {
+                            Triple(response.errno, response.msg, mapper.readValue<T>(response.data, type))
                         }
-                        raw = response.data ?: throw JSONException("JSONException")
-                    }
-                    return@run Triple(CODE_OK, null, mapper.readValue<T>(raw, type).also { data ->
-                        if (data !is T)
-                            throw JSONException("JSONException")
+                    } else Triple(CODE_OK, null, mapper.readValue<T>(raw, type))).also {
                         if (debugMode) {
                             Log.d(TAG, "${request.url()} response:")
                             formatJsonString(raw).split('\n').forEach { Log.d(TAG, it) }
                         }
-                    })
+                    }
                 } catch (e: Throwable) {
                     Log.e(TAG, "readValueException: ${e.message}")
                     if (debugMode) {

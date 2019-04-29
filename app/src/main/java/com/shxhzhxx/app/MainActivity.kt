@@ -10,7 +10,6 @@ import com.shxhzhxx.sdk.activity.setStatusBarColor
 import com.shxhzhxx.sdk.imageLoader
 import com.shxhzhxx.sdk.net
 import com.shxhzhxx.sdk.utils.Param
-import com.shxhzhxx.sdk.utils.toast
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -46,6 +45,8 @@ const val testApi3 = "https://static.usasishu.com/testApi3.txt"
 const val emptySuccess = "https://static.usasishu.com/emptySuccess.txt"
 const val debugApi = "https://static.usasishu.com/debugApi.txt"
 const val debugApi2 = "https://static.usasishu.com/debugApi2.txt"
+const val string = "https://static.usasishu.com/string.txt"
+const val emptyStrSuccess = "https://static.usasishu.com/emptyStrSuccess.txt"
 
 class MainActivity : DownloadActivity() {
 
@@ -71,14 +72,14 @@ class MainActivity : DownloadActivity() {
         }
         launch {
             delay(1000)
-            val debug = net.postCoroutine<Config>(api,onFailure = { errno, msg -> Log.d(TAG,msg) })
+            val debug = net.postCoroutine<Unit?>(emptyStrSuccess, onFailure = { errno, msg -> Log.d(TAG, msg) })
             Log.d(TAG, "list:${debug}")
         }
     }
-
 }
 
-data class Config(val serviceIMNumber:String)
+
+data class Config(val serviceIMNumber: String, val aaa: String)
 
 data class User(val name: String?, val age: Int?)
 data class Debug2(val list: List<User>?)
