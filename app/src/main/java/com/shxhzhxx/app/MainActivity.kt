@@ -13,6 +13,7 @@ import com.shxhzhxx.sdk.utils.Param
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import org.json.JSONObject
 
 const val TAG = "MainActivity"
 
@@ -47,6 +48,12 @@ const val debugApi = "https://static.usasishu.com/debugApi.txt"
 const val debugApi2 = "https://static.usasishu.com/debugApi2.txt"
 const val string = "https://static.usasishu.com/string.txt"
 const val emptyStrSuccess = "https://static.usasishu.com/emptyStrSuccess.txt"
+const val int = "https://static.usasishu.com/int.txt"
+const val int2 = "https://static.usasishu.com/int2.txt"
+const val bool = "https://static.usasishu.com/bool.txt"
+const val bool2 = "https://static.usasishu.com/bool2.txt"
+const val float = "https://static.usasishu.com/float.txt"
+const val float2 = "https://static.usasishu.com/float2.txt"
 
 class MainActivity : DownloadActivity() {
 
@@ -72,7 +79,7 @@ class MainActivity : DownloadActivity() {
         }
         launch {
             delay(1000)
-            val debug = net.postCoroutine<Unit?>(emptyStrSuccess, onFailure = { errno, msg -> Log.d(TAG, msg) })
+            val debug = net.postCoroutine<String>(string,wrap = false,onFailure = { errno, msg -> Log.d(TAG, msg) })
             Log.d(TAG, "list:${debug}")
         }
     }

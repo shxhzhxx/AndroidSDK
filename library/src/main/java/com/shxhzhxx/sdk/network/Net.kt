@@ -61,6 +61,8 @@ private data class Response(
     val isSuccessful get() = errno == 0
 }
 
+private data class Wrapper<T>(val wrapper: T)
+
 open class StringDeserializer : StdDeserializer<String>(String::class.java) {
     override fun deserialize(p: JsonParser, ctxt: DeserializationContext): String {
         if (p.currentToken() == JsonToken.VALUE_STRING)
@@ -86,10 +88,12 @@ open class StringDeserializer : StdDeserializer<String>(String::class.java) {
 //    }
 //}
 
-val mapper = ObjectMapper().apply {
-    registerKotlinModule()
-    registerModule(JsonOrgModule().apply {
-        addDeserializer(String::class.java, StringDeserializer())
+val regexQuote by lazy { Regex("^\\s*\"[\\S\\s]*\"\\s*$") }
+val mapper by lazy {
+    ObjectMapper().apply {
+        registerKotlinModule()
+        registerModule(JsonOrgModule().apply {
+            addDeserializer(String::class.java, StringDeserializer())
 
 //尝试将解析失败的返回值置为null，但是这样会绕开kotlin的空安全检查。暂时没有找到合适的处理方法
 //        setDeserializerModifier(object : BeanDeserializerModifier() {
@@ -112,10 +116,11 @@ val mapper = ObjectMapper().apply {
 //                return deserializer
 //            }
 //        })
-    })
-    configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-    configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, true)
-    configure(DeserializationFeature.ACCEPT_EMPTY_ARRAY_AS_NULL_OBJECT, true)
+        })
+        configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+        configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, true)
+        configure(DeserializationFeature.ACCEPT_EMPTY_ARRAY_AS_NULL_OBJECT, true)
+    }
 }
 
 class RequestKey(private val url: String, params: JSONObject?) {
@@ -285,14 +290,30 @@ class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: Any?) 
                     }
                 }
                 try {
+                    fun resolve(wrapper: String?) = try {
+                        mapper.readValue<T>(wrapper, type)
+                    } catch (e: Throwable) {
+                        /*
+                        * Jackson只解析JSON格式的字符串，如果想直接处理String,Int等类型，需要将字符串套成JSON
+                        * */
+                        mapper.readValue<Wrapper<T>>("{\"wrapper\":${
+                        if (wrapper == null || regexQuote.matches(wrapper) || wrapper.equals("true", ignoreCase = true)
+                                || wrapper.equals("false", ignoreCase = true) || wrapper.toDoubleOrNull() != null)
+                            wrapper
+                        else {
+                            "\"$wrapper\""
+                        }}}".also { Log.d(TAG, it) },
+                                TypeFactory.defaultInstance().constructParametricType(Wrapper::class.java, type)).wrapper
+                    }
+
                     return@run (if (wrap) {
                         val response = mapper.readValue<Response>(raw)
-                        if (!response.isSuccessful || response.data.isNullOrBlank()) {
+                        if (!response.isSuccessful) {
                             Triple(response.errno, response.msg, null)
                         } else {
-                            Triple(response.errno, response.msg, mapper.readValue<T>(response.data, type))
+                            Triple(response.errno, response.msg, resolve(response.data))
                         }
-                    } else Triple(CODE_OK, null, mapper.readValue<T>(raw, type))).also {
+                    } else Triple(CODE_OK, null, resolve(raw))).also {
                         if (debugMode) {
                             Log.d(TAG, "${request.url()} response:")
                             formatJsonString(raw).split('\n').forEach { Log.d(TAG, it) }
