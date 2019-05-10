@@ -8,12 +8,10 @@ import com.shxhzhxx.sdk.activity.DownloadActivity
 import com.shxhzhxx.sdk.activity.launchImageViewerActivity
 import com.shxhzhxx.sdk.activity.setStatusBarColor
 import com.shxhzhxx.sdk.imageLoader
-import com.shxhzhxx.sdk.net
 import com.shxhzhxx.sdk.utils.Param
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import org.json.JSONObject
 
 const val TAG = "MainActivity"
 
@@ -60,6 +58,7 @@ class MainActivity : DownloadActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        Log.d("MainActivity", "onCreate")
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             setStatusBarColor(Color.WHITE)
@@ -79,8 +78,7 @@ class MainActivity : DownloadActivity() {
         }
         launch {
             delay(1000)
-            val debug = net.postCoroutine<String>(string,wrap = false,onFailure = { errno, msg -> Log.d(TAG, msg) })
-            Log.d(TAG, "list:${debug}")
+
         }
     }
 }

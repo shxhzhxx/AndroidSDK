@@ -3,18 +3,22 @@ package com.shxhzhxx.sdk.activity
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProviders
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
 abstract class ForResultActivity : PermissionRequestActivity() {
-    private var resultCallbacks = HashMap<Int, (Int, Intent?) -> Unit>()
+    private class MyViewModel : ViewModel() {
+        val resultCallbacks = mutableMapOf<Int, (Int, Intent?) -> Unit>()
+    }
+
+    private val vm by lazy { ViewModelProviders.of(this).get(MyViewModel::class.java) }
 
     fun startActivityForResult(intent: Intent, onResult: (resultCode: Int, data: Intent?) -> Unit) {
-        val requestCode = getRequestCode(resultCallbacks)
-        resultCallbacks[requestCode] = onResult
-        startActivityForResult(intent, requestCode)
+        startActivityForResult(intent, vm.resultCallbacks.add(onResult))
     }
 
     suspend fun startActivityForResultCoroutine(intent: Intent, onFailure: (() -> Unit)? = null): Intent? =
@@ -33,7 +37,7 @@ abstract class ForResultActivity : PermissionRequestActivity() {
             }
 
     final override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        resultCallbacks.remove(requestCode)!!(resultCode, data)
+        vm.resultCallbacks.remove(requestCode)?.invoke(resultCode, data)
     }
 
 

@@ -2,6 +2,8 @@ package com.shxhzhxx.sdk.activity
 
 import android.content.pm.PackageManager
 import android.os.Build
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProviders
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
@@ -9,9 +11,13 @@ import kotlin.coroutines.resumeWithException
 
 
 abstract class PermissionRequestActivity : CoroutineActivity() {
+    private class MyViewModel : ViewModel() {
+        val permissionCallbacks = mutableMapOf<Int, Holder>()
+    }
+
     private class Holder(val onGrant: (() -> Unit)?, val onDeny: ((List<String>) -> Unit)?, val onCancel: (() -> Unit)?)
 
-    private val permissionCallbacks = HashMap<Int, Holder>()
+    private val vm by lazy { ViewModelProviders.of(this).get(MyViewModel::class.java) }
 
     fun requestPermissions(permissions: List<String>, onGrant: (() -> Unit)? = null,
                            onDeny: ((deniedPermissions: List<String>) -> Unit)? = null,
@@ -22,9 +28,7 @@ abstract class PermissionRequestActivity : CoroutineActivity() {
             onGrant?.invoke()
         } else {
             val request = {
-                val requestCode = getRequestCode(permissionCallbacks)
-                permissionCallbacks[requestCode] = Holder(onGrant, onDeny, onCancel)
-                requestPermissions(permissions.toTypedArray(), requestCode)
+                requestPermissions(permissions.toTypedArray(), vm.permissionCallbacks.add(Holder(onGrant, onDeny, onCancel)))
             }
 
             val shouldExplanations = permissions.filter { shouldShowRequestPermissionRationale(it) }
@@ -51,16 +55,8 @@ abstract class PermissionRequestActivity : CoroutineActivity() {
     }
 
 
-    protected fun <T> getRequestCode(map: Map<Int, T>): Int {
-        var code = 0
-        while (map.containsKey(code)) {
-            ++code
-        }
-        return code
-    }
-
     final override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
-        val callback = permissionCallbacks.remove(requestCode)!!
+        val callback = vm.permissionCallbacks.remove(requestCode) ?: return
         // If request is cancelled, the result arrays are empty.
         if (grantResults.isEmpty() || grantResults.size != permissions.size) {
             callback.onCancel?.invoke()
@@ -73,4 +69,13 @@ abstract class PermissionRequestActivity : CoroutineActivity() {
             }
         }
     }
+}
+
+fun <T> MutableMap<Int, T>.add(value: T): Int {
+    var code = 0
+    while (containsKey(code)) {
+        ++code
+    }
+    put(code, value)
+    return code
 }

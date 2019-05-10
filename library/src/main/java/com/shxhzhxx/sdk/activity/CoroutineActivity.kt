@@ -14,17 +14,21 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlin.coroutines.CoroutineContext
 
-class MyViewModel : ViewModel() {
-    val job = SupervisorJob()
-    override fun onCleared() {
-        super.onCleared()
-        job.cancel()
-    }
-}
 
 abstract class CoroutineActivity : AppCompatActivity(), CoroutineScope {
+    private class MyViewModel : ViewModel() {
+        private val job = SupervisorJob()
+        val coroutineContext: CoroutineContext
+            get() = Dispatchers.Main + job
+
+        override fun onCleared() {
+            super.onCleared()
+            job.cancel()
+        }
+    }
+
     override val coroutineContext: CoroutineContext
-        get() = Dispatchers.Main + vm.job
+        get() = vm.coroutineContext
     private val vm by lazy { ViewModelProviders.of(this).get(MyViewModel::class.java) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
