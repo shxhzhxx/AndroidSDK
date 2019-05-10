@@ -9,7 +9,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlin.coroutines.CoroutineContext
 
 open class CoroutineFragment : Fragment(), CoroutineScope {
-    private class MyViewModel : ViewModel() {
+    class MyViewModel : ViewModel() {
         private val job = SupervisorJob()
         val coroutineContext: CoroutineContext
             get() = Dispatchers.Main + job

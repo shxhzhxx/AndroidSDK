@@ -4,6 +4,7 @@ import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import com.shxhzhxx.sdk.activity.CoroutineActivity
 import com.shxhzhxx.sdk.activity.DownloadActivity
 import com.shxhzhxx.sdk.activity.launchImageViewerActivity
 import com.shxhzhxx.sdk.activity.setStatusBarColor
@@ -78,7 +79,7 @@ class MainActivity : DownloadActivity() {
         }
         launch {
             delay(1000)
-
+            Log.d(TAG,"success")
         }
     }
 }

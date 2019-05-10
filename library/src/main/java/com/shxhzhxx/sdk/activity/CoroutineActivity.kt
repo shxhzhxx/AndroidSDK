@@ -16,7 +16,7 @@ import kotlin.coroutines.CoroutineContext
 
 
 abstract class CoroutineActivity : AppCompatActivity(), CoroutineScope {
-    private class MyViewModel : ViewModel() {
+    class MyViewModel : ViewModel() {
         private val job = SupervisorJob()
         val coroutineContext: CoroutineContext
             get() = Dispatchers.Main + job

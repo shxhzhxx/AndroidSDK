@@ -11,7 +11,7 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
 abstract class ForResultActivity : PermissionRequestActivity() {
-    private class MyViewModel : ViewModel() {
+    class MyViewModel : ViewModel() {
         val resultCallbacks = mutableMapOf<Int, (Int, Intent?) -> Unit>()
     }
 

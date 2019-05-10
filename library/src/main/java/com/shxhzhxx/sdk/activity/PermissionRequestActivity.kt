@@ -11,11 +11,11 @@ import kotlin.coroutines.resumeWithException
 
 
 abstract class PermissionRequestActivity : CoroutineActivity() {
-    private class MyViewModel : ViewModel() {
+    class MyViewModel : ViewModel() {
         val permissionCallbacks = mutableMapOf<Int, Holder>()
     }
 
-    private class Holder(val onGrant: (() -> Unit)?, val onDeny: ((List<String>) -> Unit)?, val onCancel: (() -> Unit)?)
+    class Holder(val onGrant: (() -> Unit)?, val onDeny: ((List<String>) -> Unit)?, val onCancel: (() -> Unit)?)
 
     private val vm by lazy { ViewModelProviders.of(this).get(MyViewModel::class.java) }
 
