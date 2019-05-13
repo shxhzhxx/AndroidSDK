@@ -25,7 +25,7 @@ val statusBarHeight: Int
     }
 
 
-fun getString(id: Int, vararg formatArgs: Any) = res.getString(id, formatArgs)
+fun getString(id: Int, vararg formatArgs: Any) = res.getString(id, *formatArgs)
 
 fun getColor(id: Int) = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
     res.getColor(id, theme)
