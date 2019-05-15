@@ -4,14 +4,13 @@ import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
-import com.shxhzhxx.sdk.activity.CoroutineActivity
 import com.shxhzhxx.sdk.activity.DownloadActivity
 import com.shxhzhxx.sdk.activity.launchImageViewerActivity
 import com.shxhzhxx.sdk.activity.setStatusBarColor
 import com.shxhzhxx.sdk.imageLoader
+import com.shxhzhxx.sdk.net
 import com.shxhzhxx.sdk.utils.Param
 import kotlinx.android.synthetic.main.activity_main.*
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 const val TAG = "MainActivity"
@@ -78,14 +77,16 @@ class MainActivity : DownloadActivity() {
             }
         }
         launch {
-            delay(1000)
-            Log.d(TAG,"success")
+            val config = net.postCoroutine<ConfigEx>(api)
+            Log.d(TAG, "hx_contact_group_for_teacher:${config.hx_contact_group_for_teacher}")
+            Log.d(TAG, "sss:${config.sss}")
         }
     }
 }
 
 
-data class Config(val serviceIMNumber: String, val aaa: String)
+class ConfigEx(val hx_contact_group_for_teacher:String): Config(hx_contact_group_for_teacher)
+open class Config(val sss: String)
 
 data class User(val name: String?, val age: Int?)
 data class Debug2(val list: List<User>?)
