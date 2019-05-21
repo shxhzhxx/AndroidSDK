@@ -11,7 +11,7 @@ class ConditionalAction(conditions: List<String>,
         conditions[key] = value
         if (conditions.all { it.value })
             action(key)
-        else
+        else if (!value)
             undo?.invoke(this, key)
     }
 
