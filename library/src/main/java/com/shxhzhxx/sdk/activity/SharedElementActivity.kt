@@ -15,7 +15,7 @@ abstract class SharedElementActivity : DownloadActivity() {
             if (field != null)
                 action["invoke"] = true
         }
-    private val action = ConditionalAction(arrayOf("transition", "invoke")) {
+    private val action = ConditionalAction(listOf("transition", "invoke")) {
         if (!isCancelled)
             runAfterTransition?.invoke()
         runAfterTransition = null

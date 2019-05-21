@@ -72,7 +72,7 @@ class VideoViewer @JvmOverloads constructor(context: Context, attrs: AttributeSe
             showControlConditional["stateChange"] = true
         }
 
-    private val playConditional: ConditionalAction = ConditionalAction(arrayOf("surfaceAvailable", "prepared", "start")) {
+    private val playConditional: ConditionalAction = ConditionalAction(listOf("surfaceAvailable", "prepared", "start")) {
         this["start"] = false
         preview.visibility = View.INVISIBLE
         player.start()
@@ -81,7 +81,7 @@ class VideoViewer @JvmOverloads constructor(context: Context, attrs: AttributeSe
         showControlConditional["stateChange"] = true
         stateListener?.invoke(PlayState.PLAY)
     }
-    private val showControlConditional = ConditionalAction(arrayOf("dataSource", "stateChange")) {
+    private val showControlConditional = ConditionalAction(listOf("dataSource", "stateChange")) {
         controlLayout.visibility = View.VISIBLE
         dismissJob?.cancel()
         if (player.isPlaying && !isBuffering)

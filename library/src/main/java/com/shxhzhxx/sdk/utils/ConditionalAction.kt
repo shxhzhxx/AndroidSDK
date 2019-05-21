@@ -1,8 +1,8 @@
 package com.shxhzhxx.sdk.utils
 
-class ConditionalAction(conditions: Iterable<String>,
-                        private val action: ConditionalAction.(invoker: String) -> Unit,
-                        private val undo: (ConditionalAction.(invoker: String) -> Unit)? = null) {
+class ConditionalAction(conditions: List<String>,
+                        private val undo: (ConditionalAction.(invoker: String) -> Unit)? = null,
+                        private val action: ConditionalAction.(invoker: String) -> Unit) {
     private val conditions = conditions.associate { it to false }.toMutableMap()
 
     operator fun set(key: String, value: Boolean) {
