@@ -135,7 +135,7 @@ abstract class ListFragment<M, VH : RecyclerView.ViewHolder, A : RecyclerView.Ad
                 },
                 onLoad = { list ->
                     smartRefreshLayout.setEnableLoadMore(list.size == pageSize())
-                    if (!list.isEmpty()) {
+                    if (list.isNotEmpty()) {
                         val start = _list.size
                         _list.addAll(list)
                         adapter.notifyItemRangeInserted(start, _list.size)

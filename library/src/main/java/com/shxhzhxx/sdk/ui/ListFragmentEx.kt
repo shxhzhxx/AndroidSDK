@@ -128,7 +128,7 @@ abstract class ListFragmentEx<M, VH : RecyclerView.ViewHolder, A : RecyclerView.
                         swipe.isEnabled = !listView.canScrollVertically(-1)
                 },
                 onLoad = {list->
-                    if (!list.isEmpty()) {
+                    if (list.isNotEmpty()) {
                         val start = _list.size
                         _list.addAll(list)
                         adapter.notifyItemRangeInserted(start, list.size)

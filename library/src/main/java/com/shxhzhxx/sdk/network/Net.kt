@@ -55,11 +55,15 @@ enum class PostType {
 
 private data class Response(
         @JsonAlias("errorCode", "code") val errno: Int,
-        @JsonAlias("tips", "errorMsg", "message") val msg: String,
-        @JsonAlias("jsondata") val data: String?
+        @JsonAlias("tips", "errorMsg", "message") val msg: String
 ) {
     val isSuccessful get() = errno == 0
 }
+private data class ResponseWrapper<T>(
+        @JsonAlias("errorCode", "code") val errno: Int,
+        @JsonAlias("tips", "errorMsg", "message") val msg: String,
+        @JsonAlias("jsondata") val data: T
+)
 
 private data class Wrapper<T>(val wrapper: T)
 
@@ -311,7 +315,8 @@ class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: Any?) 
                         if (!response.isSuccessful) {
                             Triple(response.errno, response.msg, null)
                         } else {
-                            Triple(response.errno, response.msg, resolve(response.data))
+                            Triple(response.errno, response.msg, mapper.readValue<ResponseWrapper<T>>(raw,
+                                    TypeFactory.defaultInstance().constructParametricType(ResponseWrapper::class.java,type)).data)
                         }
                     } else Triple(CODE_OK, null, resolve(raw))).also {
                         if (debugMode) {
