@@ -27,6 +27,8 @@ import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import com.shxhzhxx.sdk.R
 import com.shxhzhxx.urlloader.TaskManager
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.suspendCancellableCoroutine
 import okhttp3.*
 import org.json.JSONException
@@ -165,7 +167,7 @@ class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: Any?) 
             suspendCancellableCoroutine<Unit> {
                 listener = { listener = null;it.resume(Unit) }.also { networkListeners.add(it) }
             }
-        } catch (e: CancellationException) {
+        } finally {
             listener?.let { networkListeners.remove(it) }
         }
     }
@@ -274,7 +276,15 @@ class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: Any?) 
                         throw e
                     }
                     else -> try {
-                        requireNetwork()
+                        coroutineScope {
+                            lifecycle?.addObserver(object : LifecycleObserver {
+                                @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
+                                fun onDestroy() {
+                                    coroutineContext.cancel()
+                                }
+                            })
+                            requireNetwork()
+                        }
                         errno = e.errno
                     } catch (e1: CancellationException) {
                         onFailure?.invoke(CODE_CANCELED, getMsg(CODE_CANCELED))

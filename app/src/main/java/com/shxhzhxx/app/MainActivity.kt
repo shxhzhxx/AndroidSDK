@@ -8,7 +8,8 @@ import com.shxhzhxx.sdk.activity.DownloadActivity
 import com.shxhzhxx.sdk.activity.setStatusBarColor
 import com.shxhzhxx.sdk.net
 import com.shxhzhxx.sdk.utils.Param
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
+import kotlin.coroutines.CoroutineContext
 
 const val TAG = "MainActivity"
 
@@ -62,8 +63,11 @@ class MainActivity : DownloadActivity() {
             setStatusBarColor(Color.WHITE)
         }
 
-        launch {
-            val config = net.postCoroutine<ConfigEx>(api, retry = true)
+        object : CoroutineScope {
+            override val coroutineContext: CoroutineContext
+                get() = Dispatchers.Main + SupervisorJob()
+        }.launch {
+            val config = net.postCoroutine<ConfigEx>(api, lifecycle = lifecycle, retry = true)
             Log.d(TAG, "config:${config}")
         }
     }
