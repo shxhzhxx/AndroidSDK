@@ -160,8 +160,13 @@ class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: Any?) 
     private val networkListeners = mutableListOf<() -> Unit>()
 
     suspend fun requireNetwork() {
-        suspendCancellableCoroutine<Unit> {
-            networkListeners.add { it.resume(Unit) }
+        var listener: (() -> Unit)? = null
+        try {
+            suspendCancellableCoroutine<Unit> {
+                listener = { listener = null;it.resume(Unit) }.also { networkListeners.add(it) }
+            }
+        } catch (e: CancellationException) {
+            listener?.let { networkListeners.remove(it) }
         }
     }
 
@@ -258,7 +263,7 @@ class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: Any?) 
                             onFailure = { errno, msg -> id = null;continuation.resumeWithException(InternalCancellationException(errno, msg)) })
                 }
             } catch (e: CancellationException) {
-                unregister(id ?: -1)
+                id?.let { unregister(it) }
                 when {
                     e !is InternalCancellationException -> {
                         onFailure?.invoke(CODE_CANCELED, getMsg(CODE_CANCELED))
