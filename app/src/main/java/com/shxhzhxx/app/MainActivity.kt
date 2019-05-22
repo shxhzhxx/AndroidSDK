@@ -5,10 +5,14 @@ import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import com.shxhzhxx.sdk.activity.DownloadActivity
+import com.shxhzhxx.sdk.activity.convert
 import com.shxhzhxx.sdk.activity.setStatusBarColor
 import com.shxhzhxx.sdk.net
 import com.shxhzhxx.sdk.utils.Param
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import kotlin.coroutines.CoroutineContext
 
 const val TAG = "MainActivity"
@@ -69,6 +73,12 @@ class MainActivity : DownloadActivity() {
         }.launch {
             val config = net.postCoroutine<ConfigEx>(api, lifecycle = lifecycle, retry = true)
             Log.d(TAG, "config:${config}")
+
+            val a = convert { handler ->
+                handler{
+
+                }
+            }
         }
     }
 }

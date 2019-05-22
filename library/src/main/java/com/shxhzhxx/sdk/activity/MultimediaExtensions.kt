@@ -175,12 +175,12 @@ fun InputStream.toFile(dst: File, isCancelled: ((onCancel: () -> Unit) -> Boolea
 suspend fun <T> convert(onFailure: (() -> Unit)? = null, dispatcher: CoroutineDispatcher = Dispatchers.IO, worker: (handler: (onCancel: () -> Unit) -> Boolean) -> T) =
         coroutineScope<T> {
             var isCancelled = false
-            var onCancel: () -> Unit = {}
-            val handler: (handler: () -> Unit) -> Boolean = {
-                onCancel = it
+            var action: () -> Unit = {}
+            val handler: (onCancel: () -> Unit) -> Boolean = { onCancel ->
+                action = onCancel
                 isCancelled
             }
-            return@coroutineScope try {
+            try {
                 suspendCancellableCoroutine {
                     launch(dispatcher) {
                         try {
@@ -193,7 +193,7 @@ suspend fun <T> convert(onFailure: (() -> Unit)? = null, dispatcher: CoroutineDi
                 }
             } catch (e: CancellationException) {
                 isCancelled = true
-                onCancel()
+                action()
                 onFailure?.invoke()
                 throw e
             }

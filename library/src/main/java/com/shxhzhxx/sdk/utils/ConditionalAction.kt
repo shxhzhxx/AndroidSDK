@@ -8,10 +8,11 @@ class ConditionalAction(conditions: List<String>,
     operator fun set(key: String, value: Boolean) {
         if (!conditions.containsKey(key))
             return
+        val before = conditions.all { it.value }
         conditions[key] = value
         if (conditions.all { it.value })
             action(key)
-        else if (!value)
+        else if (before)
             undo?.invoke(this, key)
     }
 
