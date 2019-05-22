@@ -4,18 +4,11 @@ import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
-import com.fasterxml.jackson.annotation.JsonAlias
-import com.shxhzhxx.sdk.CoroutineFragment
 import com.shxhzhxx.sdk.activity.DownloadActivity
 import com.shxhzhxx.sdk.activity.setStatusBarColor
 import com.shxhzhxx.sdk.net
 import com.shxhzhxx.sdk.utils.Param
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import org.json.JSONObject
 
 const val TAG = "MainActivity"
 
@@ -70,7 +63,7 @@ class MainActivity : DownloadActivity() {
         }
 
         launch {
-            val config = net.postCoroutine<ConfigEx>(api)
+            val config = net.postCoroutine<ConfigEx>(api, retry = true)
             Log.d(TAG, "config:${config}")
         }
     }

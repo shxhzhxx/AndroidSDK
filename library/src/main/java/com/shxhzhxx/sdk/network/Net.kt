@@ -1,8 +1,12 @@
 package com.shxhzhxx.sdk.network
 
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.ApplicationInfo
 import android.net.ConnectivityManager
+import android.net.ConnectivityManager.CONNECTIVITY_ACTION
 import android.util.Log
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleObserver
@@ -35,6 +39,7 @@ import java.util.*
 import java.util.concurrent.TimeUnit
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
+import kotlin.properties.Delegates
 
 const val TAG = "Net"
 const val CODE_OK = 0
@@ -59,6 +64,7 @@ private data class Response(
 ) {
     val isSuccessful get() = errno == 0
 }
+
 private data class ResponseWrapper<T>(
         @JsonAlias("errorCode", "code") val errno: Int,
         @JsonAlias("tips", "errorMsg", "message") val msg: String,
@@ -141,6 +147,24 @@ class RequestKey(private val url: String, params: JSONObject?) {
 class InternalCancellationException(val errno: Int, val msg: String) : CancellationException()
 
 class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: Any?) -> Unit, Unit>() {
+    init {
+        context.registerReceiver(object : BroadcastReceiver() {
+            override fun onReceive(context: Context, intent: Intent) {
+                if (isNetworkAvailable) {
+                    networkListeners.removeAll { it();true }
+                }
+            }
+        }, IntentFilter(CONNECTIVITY_ACTION))
+    }
+
+    private val networkListeners = mutableListOf<() -> Unit>()
+
+    suspend fun requireNetwork() {
+        suspendCancellableCoroutine<Unit> {
+            networkListeners.add { it.resume(Unit) }
+        }
+    }
+
     private val codeMsg = mapOf(
             CODE_OK to context.resources.getString(R.string.err_msg_ok),
             CODE_NO_AVAILABLE_NETWORK to context.resources.getString(R.string.err_msg_no_available_network),
@@ -222,23 +246,40 @@ class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: Any?) 
     }
 
     suspend inline fun <reified T> postCoroutine(url: String, params: JSONObject? = null, type: JavaType = TypeFactory.defaultInstance().constructType(T::class.java),
-                                                 wrap: Boolean = true, lifecycle: Lifecycle? = null, postType: PostType = PostType.FORM,
+                                                 wrap: Boolean = true, retry: Boolean = false, lifecycle: Lifecycle? = null, postType: PostType = PostType.FORM,
                                                  noinline onResponse: ((msg: String, data: T) -> Unit)? = null,
                                                  noinline onFailure: ((errno: Int, msg: String) -> Unit)? = null): T {
-        var id: Int? = null
-        return try {
-            suspendCancellableCoroutine { continuation ->
-                id = post<T>(url, params, type, wrap, lifecycle, postType, onResponse = { msg, data -> id = null;onResponse?.invoke(msg, data);continuation.resume(data) },
-                        onFailure = { errno, msg -> id = null;continuation.resumeWithException(InternalCancellationException(errno, msg)) })
+        var errno: Int by Delegates.notNull()
+        repeat(5) {
+            var id: Int? = null
+            try {
+                return suspendCancellableCoroutine { continuation ->
+                    id = post<T>(url, params, type, wrap, lifecycle, postType, onResponse = { msg, data -> id = null;onResponse?.invoke(msg, data);continuation.resume(data) },
+                            onFailure = { errno, msg -> id = null;continuation.resumeWithException(InternalCancellationException(errno, msg)) })
+                }
+            } catch (e: CancellationException) {
+                unregister(id ?: -1)
+                when {
+                    e !is InternalCancellationException -> {
+                        onFailure?.invoke(CODE_CANCELED, getMsg(CODE_CANCELED))
+                        throw e
+                    }
+                    !retry || e.errno !in listOf(CODE_NO_AVAILABLE_NETWORK, CODE_TIMEOUT) -> {
+                        onFailure?.invoke(e.errno, e.msg)
+                        throw e
+                    }
+                    else -> try {
+                        requireNetwork()
+                        errno = e.errno
+                    } catch (e1: CancellationException) {
+                        onFailure?.invoke(CODE_CANCELED, getMsg(CODE_CANCELED))
+                        throw e1
+                    }
+                }
             }
-        } catch (e: CancellationException) {
-            unregister(id ?: -1)
-            if (e is InternalCancellationException)
-                onFailure?.invoke(e.errno, e.msg)
-            else
-                onFailure?.invoke(CODE_CANCELED, getMsg(CODE_CANCELED))
-            throw e
         }
+        onFailure?.invoke(errno, getMsg(errno))
+        throw CancellationException()
     }
 
     inline fun <reified T> postFile(url: String, type: JavaType = TypeFactory.defaultInstance().constructType(T::class.java),
@@ -316,7 +357,7 @@ class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: Any?) 
                             Triple(response.errno, response.msg, null)
                         } else {
                             Triple(response.errno, response.msg, mapper.readValue<ResponseWrapper<T>>(raw,
-                                    TypeFactory.defaultInstance().constructParametricType(ResponseWrapper::class.java,type)).data)
+                                    TypeFactory.defaultInstance().constructParametricType(ResponseWrapper::class.java, type)).data)
                         }
                     } else Triple(CODE_OK, null, resolve(raw))).also {
                         if (debugMode) {
