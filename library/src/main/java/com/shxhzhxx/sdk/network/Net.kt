@@ -253,11 +253,11 @@ class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: Any?) 
     }
 
     suspend inline fun <reified T> postCoroutine(url: String, params: JSONObject? = null, type: JavaType = TypeFactory.defaultInstance().constructType(T::class.java),
-                                                 wrap: Boolean = true, retry: Boolean = false, lifecycle: Lifecycle? = null, postType: PostType = PostType.FORM,
-                                                 noinline onResponse: ((msg: String, data: T) -> Unit)? = null,
-                                                 noinline onFailure: ((errno: Int, msg: String) -> Unit)? = null): T {
-        var errno: Int by Delegates.notNull()
-        repeat(5) {
+                                                   wrap: Boolean = true, retryList: List<Pair<List<Int>, suspend (Int) -> Unit>> = emptyList(), lifecycle: Lifecycle? = null, postType: PostType = PostType.FORM,
+                                                   noinline onResponse: ((msg: String, data: T) -> Unit)? = null,
+                                                   noinline onFailure: ((errno: Int, msg: String) -> Unit)? = null): T {
+        var maxTimes = 5
+        while (true) {
             var id: Int? = null
             try {
                 return suspendCancellableCoroutine { continuation ->
@@ -266,35 +266,27 @@ class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: Any?) 
                 }
             } catch (e: CancellationException) {
                 id?.let { unregister(it) }
-                when {
-                    e !is InternalCancellationException -> {
-                        onFailure?.invoke(CODE_CANCELED, getMsg(CODE_CANCELED))
-                        throw e
-                    }
-                    !retry || e.errno !in listOf(CODE_NO_AVAILABLE_NETWORK, CODE_TIMEOUT) -> {
-                        onFailure?.invoke(e.errno, e.msg)
-                        throw e
-                    }
-                    else -> try {
-                        coroutineScope {
-                            lifecycle?.addObserver(object : LifecycleObserver {
-                                @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
-                                fun onDestroy() {
-                                    coroutineContext.cancel()
-                                }
-                            })
-                            requireNetwork()
+                if (e !is InternalCancellationException) {
+                    onFailure?.invoke(CODE_CANCELED, getMsg(CODE_CANCELED))
+                    throw e
+                }
+                if (--maxTimes < 0) {
+                    onFailure?.invoke(e.errno, e.msg)
+                    throw e
+                }
+                val action = retryList.find { e.errno in it.first }?.second
+                        ?: { onFailure?.invoke(e.errno, e.msg);throw e }
+                coroutineScope {
+                    lifecycle?.addObserver(object : LifecycleObserver {
+                        @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
+                        fun onDestroy() {
+                            coroutineContext.cancel()
                         }
-                        errno = e.errno
-                    } catch (e1: CancellationException) {
-                        onFailure?.invoke(CODE_CANCELED, getMsg(CODE_CANCELED))
-                        throw e1
-                    }
+                    })
+                    action(e.errno)
                 }
             }
         }
-        onFailure?.invoke(errno, getMsg(errno))
-        throw CancellationException()
     }
 
     inline fun <reified T> postFile(url: String, type: JavaType = TypeFactory.defaultInstance().constructType(T::class.java),

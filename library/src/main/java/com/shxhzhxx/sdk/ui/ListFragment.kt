@@ -45,8 +45,8 @@ abstract class ListFragment<M, VH : RecyclerView.ViewHolder, A : RecyclerView.Ad
         smartRefreshLayout.setOnLoadMoreListener { nextPage() }
 
         fun check() {
-            smartRefreshLayout.setEnableLoadMore(_list.size % pageSize() == 0 && !swipe.isRefreshing)//根据swipe的isRefreshing状态来判断事件是否要禁止smartRefreshLayout可用
-            swipe.isEnabled = smartRefreshLayout.state != RefreshState.ReleaseToLoad &&
+            smartRefreshLayout?.setEnableLoadMore(_list.size % pageSize() == 0 && !swipe.isRefreshing)//根据swipe的isRefreshing状态来判断事件是否要禁止smartRefreshLayout可用
+            swipe?.isEnabled = smartRefreshLayout.state != RefreshState.ReleaseToLoad &&
                     smartRefreshLayout.state != RefreshState.LoadReleased &&
                     smartRefreshLayout.state != RefreshState.Loading  //根据smartRefreshLayout的Load状态来判断事件是否要禁止mSwipe可用
         }
@@ -109,7 +109,7 @@ abstract class ListFragment<M, VH : RecyclerView.ViewHolder, A : RecyclerView.Ad
     }
 
     private fun nextPage() {
-        if (loading)
+        if (loading || swipe == null)
             return
         loading = true
 
@@ -128,13 +128,13 @@ abstract class ListFragment<M, VH : RecyclerView.ViewHolder, A : RecyclerView.Ad
                         adapter.notifyItemRangeRemoved(0, size)
                     }
                     loading = false
-                    swipe.isEnabled = true
-                    swipe.isRefreshing = false
-                    smartRefreshLayout.setEnableLoadMore(true)
-                    smartRefreshLayout.finishLoadMore()
+                    swipe?.isEnabled = true
+                    swipe?.isRefreshing = false
+                    smartRefreshLayout?.setEnableLoadMore(true)
+                    smartRefreshLayout?.finishLoadMore()
                 },
                 onLoad = { list ->
-                    smartRefreshLayout.setEnableLoadMore(list.size == pageSize())
+                    smartRefreshLayout?.setEnableLoadMore(list.size == pageSize())
                     if (list.isNotEmpty()) {
                         val start = _list.size
                         _list.addAll(list)

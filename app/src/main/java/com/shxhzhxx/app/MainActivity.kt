@@ -5,9 +5,10 @@ import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import com.shxhzhxx.sdk.activity.DownloadActivity
-import com.shxhzhxx.sdk.activity.convert
 import com.shxhzhxx.sdk.activity.setStatusBarColor
 import com.shxhzhxx.sdk.net
+import com.shxhzhxx.sdk.network.CODE_NO_AVAILABLE_NETWORK
+import com.shxhzhxx.sdk.network.CODE_TIMEOUT
 import com.shxhzhxx.sdk.utils.Param
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -71,14 +72,13 @@ class MainActivity : DownloadActivity() {
             override val coroutineContext: CoroutineContext
                 get() = Dispatchers.Main + SupervisorJob()
         }.launch {
-            val config = net.postCoroutine<ConfigEx>(api, lifecycle = lifecycle, retry = true)
-            Log.d(TAG, "config:${config}")
-
-            val a = convert { handler ->
-                handler{
-
-                }
+            val r: suspend (Int) -> Unit = {
             }
+            val config = net.postCoroutine<ConfigEx>(api, lifecycle = lifecycle, retryList = listOf(
+                    listOf(CODE_NO_AVAILABLE_NETWORK, CODE_TIMEOUT) to { errno -> net.requireNetwork() },
+                    listOf(3005) to r
+            ))
+            Log.d(TAG, "config:${config}")
         }
     }
 }
