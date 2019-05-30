@@ -41,7 +41,6 @@ import java.util.*
 import java.util.concurrent.TimeUnit
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
-import kotlin.properties.Delegates
 
 const val TAG = "Net"
 const val CODE_OK = 0
@@ -253,9 +252,9 @@ class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: Any?) 
     }
 
     suspend inline fun <reified T> postCoroutine(url: String, params: JSONObject? = null, type: JavaType = TypeFactory.defaultInstance().constructType(T::class.java),
-                                                   wrap: Boolean = true, retryList: List<Pair<List<Int>, suspend (Int) -> Unit>> = emptyList(), lifecycle: Lifecycle? = null, postType: PostType = PostType.FORM,
-                                                   noinline onResponse: ((msg: String, data: T) -> Unit)? = null,
-                                                   noinline onFailure: ((errno: Int, msg: String) -> Unit)? = null): T {
+                                                 wrap: Boolean = true, retryList: List<Pair<List<Int>, suspend (Int) -> Unit>> = emptyList(), lifecycle: Lifecycle? = null, postType: PostType = PostType.FORM,
+                                                 noinline onResponse: ((msg: String, data: T) -> Unit)? = null,
+                                                 noinline onFailure: ((errno: Int, msg: String) -> Unit)? = null): T {
         var maxTimes = 5
         while (true) {
             var id: Int? = null
@@ -369,7 +368,9 @@ class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: Any?) 
                     } else Triple(CODE_OK, null, resolve(raw))).also {
                         if (debugMode) {
                             Log.d(TAG, "${request.url()} response:")
-                            formatJsonString(raw).split('\n').forEach { Log.d(TAG, it) }
+                            synchronized(this@Net) {
+                                formatJsonString(raw).split('\n').forEach { Log.d(TAG, it) }
+                            }
                         }
                     }
                 } catch (e: Throwable) {
