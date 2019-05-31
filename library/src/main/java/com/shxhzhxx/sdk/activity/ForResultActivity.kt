@@ -3,6 +3,7 @@ package com.shxhzhxx.sdk.activity
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
+import androidx.annotation.CallSuper
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProviders
 import kotlinx.coroutines.CancellationException
@@ -36,7 +37,8 @@ abstract class ForResultActivity : PermissionRequestActivity() {
                 throw e
             }
 
-    final override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+    @CallSuper
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         vm.resultCallbacks.remove(requestCode)?.invoke(resultCode, data)
     }
 
