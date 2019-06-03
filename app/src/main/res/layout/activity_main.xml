@@ -3,8 +3,9 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <FrameLayout
-        android:id="@+id/container"
+    <ImageView
+        android:id="@+id/iv"
+        android:layout_margin="30dp"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 </FrameLayout>

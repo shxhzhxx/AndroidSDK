@@ -5,12 +5,15 @@ import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import com.shxhzhxx.imageloader.cornerTransformation
 import com.shxhzhxx.sdk.activity.DownloadActivity
 import com.shxhzhxx.sdk.activity.setStatusBarColor
+import com.shxhzhxx.sdk.imageLoader
 import com.shxhzhxx.sdk.net
 import com.shxhzhxx.sdk.network.CODE_NO_AVAILABLE_NETWORK
 import com.shxhzhxx.sdk.network.CODE_TIMEOUT
 import com.shxhzhxx.sdk.utils.Param
+import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.coroutines.*
 import kotlin.coroutines.CoroutineContext
 
@@ -78,6 +81,8 @@ class MainActivity : DownloadActivity() {
             ))
             Log.d(TAG, "config:${config}")
         }
+
+        imageLoader.load(iv,u3,transformation = {cornerTransformation(it,40f)})
     }
 }
 

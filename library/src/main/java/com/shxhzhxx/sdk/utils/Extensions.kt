@@ -1,6 +1,7 @@
 package com.shxhzhxx.sdk.utils
 
 import android.graphics.Bitmap
+import android.graphics.drawable.Drawable
 import android.widget.ImageView
 import androidx.annotation.IntRange
 import androidx.fragment.app.FragmentActivity
@@ -56,7 +57,7 @@ suspend fun ImageLoader.loadCoroutine(iv: ImageView, path: String?,
                                       waitForLayout: Boolean = false,
                                       placeholder: Int? = 0,// pass 0 will clear current drawable before load
                                       error: Int? = null,
-                                      transformation: ((Bitmap) -> Bitmap)? = null) {
+                                      transformation: ((Bitmap) -> Drawable)? = null) {
     var id: Int? = null
     return try {
         suspendCancellableCoroutine { continuation ->
