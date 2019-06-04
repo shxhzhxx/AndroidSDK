@@ -19,6 +19,14 @@ lateinit var net: Net private set
 @MustBeDocumented
 annotation class OnProcessCreate(val processNames: Array<String>)
 
+fun Context.initSdk() {
+    imageLoader = ImageLoader(contentResolver, cacheDir)
+    net = Net(this)
+    initParams(this)
+    initToast(this)
+    initRes(this)
+}
+
 open class Application : android.app.Application() {
     override fun onCreate() {
         super.onCreate()
@@ -33,11 +41,7 @@ open class Application : android.app.Application() {
     }
 
     open fun onMainProcessCreate() {
-        imageLoader = ImageLoader(contentResolver, cacheDir)
-        net = Net(this)
-        initParams(this)
-        initToast(this)
-        initRes(this)
+        initSdk()
     }
 
     override fun onTrimMemory(level: Int) {
