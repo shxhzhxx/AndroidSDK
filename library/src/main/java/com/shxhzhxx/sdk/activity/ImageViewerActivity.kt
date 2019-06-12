@@ -117,7 +117,7 @@ class ImageViewerActivity : ForResultActivity(), View.OnClickListener {
                 cache.add(obj)
             }
         }
-        pager.addOnPageChangeListener(object : ViewPager.SimpleOnPageChangeListener() {
+        val listener = object : ViewPager.SimpleOnPageChangeListener() {
             override fun onPageSelected(position: Int) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                     pager.transitionName = paths[position]
@@ -125,8 +125,10 @@ class ImageViewerActivity : ForResultActivity(), View.OnClickListener {
                 @SuppressLint("SetTextI18n")
                 indicator.text = "${position + 1}/${paths.size}"
             }
-        })
+        }
+        pager.addOnPageChangeListener(listener)
         pager.currentItem = position
+        listener.onPageSelected(position)
     }
 
     override fun onClick(v: View) {
