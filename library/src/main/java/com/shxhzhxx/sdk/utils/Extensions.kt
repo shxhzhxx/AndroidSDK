@@ -2,6 +2,7 @@ package com.shxhzhxx.sdk.utils
 
 import android.graphics.Bitmap
 import android.graphics.drawable.Drawable
+import android.util.Log
 import android.widget.ImageView
 import androidx.annotation.IntRange
 import androidx.fragment.app.FragmentActivity
@@ -10,9 +11,10 @@ import com.shxhzhxx.imageloader.BitmapLoader
 import com.shxhzhxx.imageloader.ImageLoader
 import com.shxhzhxx.imageloader.isLaidOutCompat
 import com.shxhzhxx.urlloader.UrlLoader
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.*
 import java.io.File
+import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
@@ -61,11 +63,38 @@ suspend fun ImageLoader.loadCoroutine(iv: ImageView, path: String?,
     var id: Int? = null
     return try {
         suspendCancellableCoroutine { continuation ->
-            val finally = { id = null;continuation.resume(Unit) }
-            id = load(iv, path, lifecycle, centerCrop, width, height, waitForLayout, placeholder, error, transformation, finally, finally, finally)
+            id = load(iv, path, lifecycle, centerCrop, width, height, waitForLayout, placeholder, error, transformation,
+                    { id = null;continuation.resume(Unit) },
+                    { id = null;continuation.resumeWithException(CancellationException()) },
+                    { id = null;continuation.resumeWithException(CancellationException()) }
+            )
         }
     } catch (e: CancellationException) {
         unregister(id ?: -1)
         throw e
+    }
+}
+
+fun CoroutineScope.launchFinally(
+        finally: () -> Unit,
+        context: CoroutineContext = EmptyCoroutineContext,
+        start: CoroutineStart = CoroutineStart.DEFAULT,
+        block: suspend CoroutineScope.() -> Unit
+): Job {
+    return launch(context, start) {
+        try {
+            block.invoke(this)
+        } finally {
+            /*
+            * Cancellation of the coroutine is asynchronous
+            * When the finally block execute, the view referenced by the kotlin extension method may have been released,
+            * resulting in a null pointer exception.
+            * */
+            try {
+                finally()
+            } catch (e: Throwable) {
+                Log.e("launchFinally", "${e.message}\n${e.stackTrace.joinToString(separator = "\n")}")
+            }
+        }
     }
 }

@@ -17,6 +17,7 @@ import com.github.chrisbanes.photoview.PhotoView
 import com.shxhzhxx.sdk.R
 import com.shxhzhxx.sdk.imageLoader
 import com.shxhzhxx.sdk.utils.copyTo
+import com.shxhzhxx.sdk.utils.launchFinally
 import com.shxhzhxx.sdk.utils.loadCoroutine
 import com.shxhzhxx.sdk.utils.toast
 import kotlinx.android.synthetic.main.activity_image_viewer.*
@@ -101,9 +102,8 @@ class ImageViewerActivity : ForResultActivity(), View.OnClickListener {
                 val path = paths[position]
                 if (transition) {
                     transition = false
-                    launch {
+                    launchFinally({ supportStartPostponedEnterTransition() }) {
                         imageLoader.loadCoroutine(view, path, centerCrop = false)
-                        supportStartPostponedEnterTransition()
                     }
                 } else {
                     imageLoader.load(view, path, centerCrop = false)
