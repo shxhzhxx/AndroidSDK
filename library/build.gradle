@@ -43,9 +43,9 @@ dependencies {
     implementation 'com.scwang.smartrefresh:SmartRefreshLayout:1.1.0-andx-3'
     implementation 'com.scwang.smartrefresh:SmartRefreshHeader:1.1.0-andx-3'
     //jackson 2.9.8 对kotlin继承类的反序列化支持有bug
-    implementation 'com.fasterxml.jackson.core:jackson-databind:2.9.6'
-    implementation 'com.fasterxml.jackson.module:jackson-module-kotlin:2.9.6'
-    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-json-org:2.9.6'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.9.9'
+    implementation 'com.fasterxml.jackson.module:jackson-module-kotlin:2.9.9'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-json-org:2.9.9'
     def lifecycle_version = "2.0.0"
     implementation "androidx.lifecycle:lifecycle-extensions:$lifecycle_version"
     kapt "androidx.lifecycle:lifecycle-compiler:$lifecycle_version"

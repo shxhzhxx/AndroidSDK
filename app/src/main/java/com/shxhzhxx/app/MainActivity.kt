@@ -59,6 +59,7 @@ const val testApi3 = "https://static.usasishu.com/testApi3.txt"
 const val emptySuccess = "https://static.usasishu.com/emptySuccess.txt"
 const val debugApi = "https://static.usasishu.com/debugApi.txt"
 const val debugApi2 = "https://static.usasishu.com/debugApi2.txt"
+const val debugApi3 = "https://static.usasishu.com/debugApi3.txt"
 const val string = "https://static.usasishu.com/string.txt"
 const val emptyStrSuccess = "https://static.usasishu.com/emptyStrSuccess.txt"
 const val int = "https://static.usasishu.com/int.txt"
@@ -86,11 +87,11 @@ class MainActivity : DownloadActivity() {
         }.launch {
             val r: suspend (Int) -> Unit = {
             }
-            val config = net.postCoroutine<ConfigEx>(api, lifecycle = lifecycle, retryList = listOf(
+            val config = net.postCoroutine<Debug3>(debugApi3, lifecycle = lifecycle, retryList = listOf(
                     listOf(CODE_NO_AVAILABLE_NETWORK, CODE_TIMEOUT) to { errno -> net.requireNetwork() },
                     listOf(3005) to r
             ))
-            Log.d(TAG, "config:${config}")
+            Log.d(TAG, "config:$config")
         }
 
         imageLoader.load(iv, "http://p15.qhimg.com/bdm/720_444_0/t01b12dfd7f42342197.jpg", centerCrop = false,roundingRadius = ROUND_CIRCLE)
@@ -101,11 +102,12 @@ class MainActivity : DownloadActivity() {
 
 
 data class CodeModel(val sisValids: Boolean)
-data class ConfigEx(val hx_contact_group_for_teacher: String) : Config(hx_contact_group_for_teacher)
-open class Config(val sss: String)
+class ConfigEx(val hx_contact_group_for_teacher: String) : Config(hx_contact_group_for_teacher)
+open class Config(val serviceIMNumber: String)
 
 data class User(val name: String?, val age: Int?)
 data class Debug2(val list: List<User>?)
+data class Debug3(val list: List<User>)
 data class Debug(val list: String?)
 data class Student(
         val name: String,
