@@ -1,7 +1,6 @@
 package com.shxhzhxx.sdk.utils
 
 import android.graphics.Bitmap
-import android.graphics.drawable.Drawable
 import android.util.Log
 import android.widget.ImageView
 import androidx.annotation.IntRange
@@ -54,7 +53,7 @@ suspend fun BitmapLoader.loadCoroutine(path: String, @IntRange(from = 0) width: 
 suspend fun ImageLoader.loadCoroutine(iv: ImageView, path: String?,
                                       lifecycle: Lifecycle? = iv.context.let { if (it is FragmentActivity) it.lifecycle else null },
                                       centerCrop: Boolean = true,
-                                      roundingRadius: Float = 0f,
+                                      roundingRadius: Int = 0,
                                       width: Int? = if (iv.isLaidOutCompat) iv.width else null,
                                       height: Int? = if (iv.isLaidOutCompat) iv.height else null,
                                       waitForLayout: Boolean = false,

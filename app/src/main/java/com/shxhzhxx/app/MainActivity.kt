@@ -10,6 +10,7 @@ import androidx.core.net.toFile
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.bitmap.RoundedCorners
 import com.bumptech.glide.request.RequestOptions
+import com.shxhzhxx.imageloader.ROUND_CIRCLE
 import com.shxhzhxx.sdk.activity.DownloadActivity
 import com.shxhzhxx.sdk.activity.openDocument
 import com.shxhzhxx.sdk.activity.setStatusBarColor
@@ -92,23 +93,11 @@ class MainActivity : DownloadActivity() {
             Log.d(TAG, "config:${config}")
         }
 
-        imageLoader.load(iv, "http://p15.qhimg.com/bdm/720_444_0/t01b12dfd7f42342197.jpg", centerCrop = false,roundingRadius = 40f)
+        imageLoader.load(iv, "http://p15.qhimg.com/bdm/720_444_0/t01b12dfd7f42342197.jpg", centerCrop = false,roundingRadius = ROUND_CIRCLE)
 //        Glide.with(this).load("http://p15.qhimg.com/bdm/720_444_0/t01b12dfd7f42342197.jpg").apply(RequestOptions.bitmapTransform(RoundedCorners(40))).into(iv)
 //        RoundedCornersTransformation()
     }
 }
-
-fun roundedCorners(bitmap: Bitmap, radius: Float = 0f): Bitmap =
-        if (radius == 0f) bitmap else Bitmap.createBitmap(bitmap.width, bitmap.height, Bitmap.Config.ARGB_8888).apply {
-            Canvas(this).apply {
-                drawRoundRect(RectF(0f, 0f, width.toFloat(), height.toFloat()), radius, radius, Paint().apply {
-                    isAntiAlias = true
-                    shader = BitmapShader(bitmap, Shader.TileMode.CLAMP,
-                            Shader.TileMode.CLAMP)
-                })
-                setBitmap(null)
-            }
-        }
 
 
 data class CodeModel(val sisValids: Boolean)
