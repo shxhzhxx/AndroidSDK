@@ -54,16 +54,17 @@ suspend fun BitmapLoader.loadCoroutine(path: String, @IntRange(from = 0) width: 
 suspend fun ImageLoader.loadCoroutine(iv: ImageView, path: String?,
                                       lifecycle: Lifecycle? = iv.context.let { if (it is FragmentActivity) it.lifecycle else null },
                                       centerCrop: Boolean = true,
+                                      roundingRadius: Float = 0f,
                                       width: Int? = if (iv.isLaidOutCompat) iv.width else null,
                                       height: Int? = if (iv.isLaidOutCompat) iv.height else null,
                                       waitForLayout: Boolean = false,
                                       placeholder: Int? = 0,// pass 0 will clear current drawable before load
                                       error: Int? = null,
-                                      transformation: ((Bitmap) -> Drawable)? = null) {
+                                      transformation: ((Bitmap) -> Bitmap)? = null) {
     var id: Int? = null
     return try {
         suspendCancellableCoroutine { continuation ->
-            id = load(iv, path, lifecycle, centerCrop, width, height, waitForLayout, placeholder, error, transformation,
+            id = load(iv, path, lifecycle, centerCrop, roundingRadius, width, height, waitForLayout, placeholder, error, transformation,
                     { id = null;continuation.resume(Unit) },
                     { id = null;continuation.resumeWithException(CancellationException()) },
                     { id = null;continuation.resumeWithException(CancellationException()) }

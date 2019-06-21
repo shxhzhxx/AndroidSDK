@@ -1,21 +1,31 @@
 package com.shxhzhxx.app
 
-import android.content.Intent
-import android.graphics.Color
+import android.graphics.*
+import android.graphics.drawable.BitmapDrawable
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
-import com.shxhzhxx.imageloader.cornerTransformation
+import androidx.core.graphics.withMatrix
+import androidx.core.net.toFile
+import com.bumptech.glide.Glide
+import com.bumptech.glide.load.resource.bitmap.RoundedCorners
+import com.bumptech.glide.request.RequestOptions
 import com.shxhzhxx.sdk.activity.DownloadActivity
+import com.shxhzhxx.sdk.activity.openDocument
 import com.shxhzhxx.sdk.activity.setStatusBarColor
+import com.shxhzhxx.sdk.activity.toFileCoroutine
 import com.shxhzhxx.sdk.imageLoader
 import com.shxhzhxx.sdk.net
 import com.shxhzhxx.sdk.network.CODE_NO_AVAILABLE_NETWORK
 import com.shxhzhxx.sdk.network.CODE_TIMEOUT
 import com.shxhzhxx.sdk.utils.Param
 import kotlinx.android.synthetic.main.activity_main.*
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import kotlin.coroutines.CoroutineContext
+
 
 const val TAG = "MainActivity"
 
@@ -82,9 +92,23 @@ class MainActivity : DownloadActivity() {
             Log.d(TAG, "config:${config}")
         }
 
-        imageLoader.load(iv,u3,transformation = {cornerTransformation(it,40f)})
+        imageLoader.load(iv, "http://p15.qhimg.com/bdm/720_444_0/t01b12dfd7f42342197.jpg", centerCrop = false,roundingRadius = 40f)
+//        Glide.with(this).load("http://p15.qhimg.com/bdm/720_444_0/t01b12dfd7f42342197.jpg").apply(RequestOptions.bitmapTransform(RoundedCorners(40))).into(iv)
+//        RoundedCornersTransformation()
     }
 }
+
+fun roundedCorners(bitmap: Bitmap, radius: Float = 0f): Bitmap =
+        if (radius == 0f) bitmap else Bitmap.createBitmap(bitmap.width, bitmap.height, Bitmap.Config.ARGB_8888).apply {
+            Canvas(this).apply {
+                drawRoundRect(RectF(0f, 0f, width.toFloat(), height.toFloat()), radius, radius, Paint().apply {
+                    isAntiAlias = true
+                    shader = BitmapShader(bitmap, Shader.TileMode.CLAMP,
+                            Shader.TileMode.CLAMP)
+                })
+                setBitmap(null)
+            }
+        }
 
 
 data class CodeModel(val sisValids: Boolean)
