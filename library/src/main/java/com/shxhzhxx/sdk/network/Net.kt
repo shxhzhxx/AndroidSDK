@@ -171,7 +171,7 @@ class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: Any?) 
         }
     }
 
-    private val codeMsg = mapOf(
+    val codeMsg = mutableMapOf(
             CODE_OK to context.resources.getString(R.string.err_msg_ok),
             CODE_NO_AVAILABLE_NETWORK to context.resources.getString(R.string.err_msg_no_available_network),
             CODE_TIMEOUT to context.resources.getString(R.string.err_msg_timeout),
