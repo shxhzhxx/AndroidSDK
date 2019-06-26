@@ -353,8 +353,7 @@ class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: Any?) 
                             wrapper
                         else {
                             "\"$wrapper\""
-                        }}}".also { Log.d(TAG, it) },
-                                TypeFactory.defaultInstance().constructParametricType(Wrapper::class.java, type)).wrapper
+                        }}}", TypeFactory.defaultInstance().constructParametricType(Wrapper::class.java, type)).wrapper
                     }
 
                     return@run (if (wrap) {
@@ -367,8 +366,8 @@ class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: Any?) 
                         }
                     } else Triple(CODE_OK, null, resolve(raw))).also {
                         if (debugMode) {
-                            Log.d(TAG, "${request.url()} response:")
                             synchronized(this@Net) {
+                                Log.d(TAG, "${request.url()} response:")
                                 formatJsonString(raw).split('\n').forEach { Log.d(TAG, it) }
                             }
                         }
