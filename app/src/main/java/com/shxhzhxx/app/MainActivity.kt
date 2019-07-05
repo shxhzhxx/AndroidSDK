@@ -1,20 +1,15 @@
 package com.shxhzhxx.app
 
-import android.graphics.*
-import android.graphics.drawable.BitmapDrawable
+import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
-import androidx.core.graphics.withMatrix
-import androidx.core.net.toFile
-import com.bumptech.glide.Glide
-import com.bumptech.glide.load.resource.bitmap.RoundedCorners
-import com.bumptech.glide.request.RequestOptions
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleObserver
+import androidx.lifecycle.OnLifecycleEvent
 import com.shxhzhxx.imageloader.ROUND_CIRCLE
 import com.shxhzhxx.sdk.activity.DownloadActivity
-import com.shxhzhxx.sdk.activity.openDocument
 import com.shxhzhxx.sdk.activity.setStatusBarColor
-import com.shxhzhxx.sdk.activity.toFileCoroutine
 import com.shxhzhxx.sdk.imageLoader
 import com.shxhzhxx.sdk.net
 import com.shxhzhxx.sdk.network.CODE_NO_AVAILABLE_NETWORK
@@ -94,9 +89,25 @@ class MainActivity : DownloadActivity() {
             Log.d(TAG, "config:$config")
         }
 
-        imageLoader.load(iv, "http://p15.qhimg.com/bdm/720_444_0/t01b12dfd7f42342197.jpg", centerCrop = false,roundingRadius = ROUND_CIRCLE)
+        imageLoader.load(iv, "http://p15.qhimg.com/bdm/720_444_0/t01b12dfd7f42342197.jpg", centerCrop = false, roundingRadius = ROUND_CIRCLE)
 //        Glide.with(this).load("http://p15.qhimg.com/bdm/720_444_0/t01b12dfd7f42342197.jpg").apply(RequestOptions.bitmapTransform(RoundedCorners(40))).into(iv)
 //        RoundedCornersTransformation()
+
+        iv.setOnClickListener {
+            Log.d(TAG, "state:${lifecycle.currentState.name}")
+            lifecycle.addObserver(object : LifecycleObserver {
+                @OnLifecycleEvent(Lifecycle.Event.ON_START)
+                fun onStart() {
+                    Log.d(TAG, "ON_START")
+                }
+
+                @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
+                fun onResume() {
+                    Log.d(TAG, "ON_RESUME")
+                }
+            })
+            Log.d(TAG,"do something here")
+        }
     }
 }
 
