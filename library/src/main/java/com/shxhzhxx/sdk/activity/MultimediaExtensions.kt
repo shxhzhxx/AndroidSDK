@@ -131,6 +131,7 @@ suspend fun ForResultActivity.takeVideoCoroutine(onFailure: (() -> Unit)? = null
 fun ForResultActivity.cropPicture(picture: Uri, aspectX: Float, aspectY: Float, onCrop: (Uri, File) -> Unit,
                                   maxWidth: Int = Int.MAX_VALUE, maxHeight: Int = Int.MAX_VALUE, onFailure: (() -> Unit)? = null) {
     launch {
+        requestPermissionsCoroutine(listOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), onFailure)
         val file = createPictureFile() ?: run { onFailure?.invoke(); return@launch }
         val uri = Uri.fromFile(file)
         val intent = UCrop.of(picture, uri).withAspectRatio(aspectX, aspectY)

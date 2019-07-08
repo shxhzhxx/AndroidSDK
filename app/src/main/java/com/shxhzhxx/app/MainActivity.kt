@@ -4,22 +4,17 @@ import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleObserver
-import androidx.lifecycle.OnLifecycleEvent
-import com.shxhzhxx.imageloader.ROUND_CIRCLE
+import android.view.ViewGroup
+import android.widget.TextView
+import androidx.recyclerview.widget.RecyclerView
 import com.shxhzhxx.sdk.activity.DownloadActivity
 import com.shxhzhxx.sdk.activity.setStatusBarColor
-import com.shxhzhxx.sdk.imageLoader
 import com.shxhzhxx.sdk.net
 import com.shxhzhxx.sdk.network.CODE_NO_AVAILABLE_NETWORK
 import com.shxhzhxx.sdk.network.CODE_TIMEOUT
+import com.shxhzhxx.sdk.ui.ListFragment
 import com.shxhzhxx.sdk.utils.Param
-import kotlinx.android.synthetic.main.activity_main.*
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import kotlin.coroutines.CoroutineContext
 
 
@@ -89,25 +84,7 @@ class MainActivity : DownloadActivity() {
             Log.d(TAG, "config:$config")
         }
 
-        imageLoader.load(iv, "http://p15.qhimg.com/bdm/720_444_0/t01b12dfd7f42342197.jpg", centerCrop = false, roundingRadius = ROUND_CIRCLE)
-//        Glide.with(this).load("http://p15.qhimg.com/bdm/720_444_0/t01b12dfd7f42342197.jpg").apply(RequestOptions.bitmapTransform(RoundedCorners(40))).into(iv)
-//        RoundedCornersTransformation()
-
-        iv.setOnClickListener {
-            Log.d(TAG, "state:${lifecycle.currentState.name}")
-            lifecycle.addObserver(object : LifecycleObserver {
-                @OnLifecycleEvent(Lifecycle.Event.ON_START)
-                fun onStart() {
-                    Log.d(TAG, "ON_START")
-                }
-
-                @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
-                fun onResume() {
-                    Log.d(TAG, "ON_RESUME")
-                }
-            })
-            Log.d(TAG,"do something here")
-        }
+//        imageLoader.load(iv, "http://p15.qhimg.com/bdm/720_444_0/t01b12dfd7f42342197.jpg", centerCrop = false, roundingRadius = ROUND_CIRCLE)
     }
 }
 
@@ -147,3 +124,32 @@ val ccc = Param("ccc", 0)
 val ddd = Param("ddd", true)
 val eee = Param("eee", 0f)
 val invalid = Param("eee", Model("aaa"))
+
+
+class MainFragment : ListFragment<Unit, RecyclerView.ViewHolder, MainFragment.MainAdapter>() {
+    inner class MainAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) =
+                object : RecyclerView.ViewHolder(TextView(parent.context).also { it.setPadding(200, 200, 200, 200) }) {}
+
+        override fun getItemCount() = listSize
+
+        override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+            (holder.itemView as TextView).text = "item$position"
+        }
+    }
+
+    override fun onAdapter() = MainAdapter()
+
+    override fun onNextPage(page: Int, onResult: () -> Unit, onLoad: (list: List<Unit>) -> Unit) {
+        launch {
+            delay(1000)
+            onResult()
+            delay(20)
+            if(listSize>30 || true){
+                mutableListOf<Unit>().also { list -> repeat(7) { list.add(Unit) } }.apply(onLoad)
+            }else{
+                mutableListOf<Unit>().also { list -> repeat(pageSize()) { list.add(Unit) } }.apply(onLoad)
+            }
+        }
+    }
+}

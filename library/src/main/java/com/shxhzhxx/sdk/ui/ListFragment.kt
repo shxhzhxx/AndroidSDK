@@ -46,7 +46,7 @@ abstract class ListFragment<M, VH : RecyclerView.ViewHolder, A : RecyclerView.Ad
 
         fun check() {
             smartRefreshLayout?.setEnableLoadMore(_list.size % pageSize() == 0 && !swipe.isRefreshing)//根据swipe的isRefreshing状态来判断事件是否要禁止smartRefreshLayout可用
-            swipe?.isEnabled = smartRefreshLayout.state != RefreshState.ReleaseToLoad &&
+            swipe?.isEnabled = !listRecyclerView.canScrollVertically(-1) && smartRefreshLayout.state != RefreshState.ReleaseToLoad &&
                     smartRefreshLayout.state != RefreshState.LoadReleased &&
                     smartRefreshLayout.state != RefreshState.Loading  //根据smartRefreshLayout的Load状态来判断事件是否要禁止mSwipe可用
         }

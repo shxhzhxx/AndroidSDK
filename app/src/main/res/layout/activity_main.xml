@@ -3,9 +3,9 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <ImageView
-        android:id="@+id/iv"
-        android:layout_margin="30dp"
-        android:layout_width="200dp"
-        android:layout_height="200dp" />
+    <fragment
+        android:id="@+id/fragment"
+        android:name="com.shxhzhxx.app.MainFragment"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
 </FrameLayout>
