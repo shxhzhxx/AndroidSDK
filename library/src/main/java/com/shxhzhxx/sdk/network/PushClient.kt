@@ -1,188 +1,151 @@
 package com.shxhzhxx.sdk.network
 
-//public class PushClient extends Thread {
-//    enum State {
-//        INIT,
-//        CONNECTED,
-//        BIND,
-//        ERROR
-//    }
-//
-//    public interface Callback {
-//        void onStateChange(State state);
-//
-//        void onReceiveData(byte[] data);
-//    }
-//
-//    private final byte[] BIND_ECHO = UUID.randomUUID().toString().getBytes();
-//    private State state;
-//    private final Callback callback;
-//    private final String host;
-//    private final int port;
-//    private SocketChannel channel;
-//    private ByteBuffer sendBuffer;
-//
-//    public PushClient(String host, int port, Callback callback) {
-//        state = State.INIT;
-//        this.callback = callback;
-//        this.host = host;
-//        this.port = port;
-//    }
-//
-//    public State getPushState() {
-//        return state;
-//    }
-//
-//    private void setState(State state) {
-//        this.state = state;
-//        callback.onStateChange(state);
-//    }
-//
-//    public synchronized void getIp() {
-//        if (state != State.CONNECTED && state != State.BIND)
-//            return;
-//        sendBuffer.limit(5).position(0);
-//        sendBuffer.putInt(5);
-//        sendBuffer.put((byte) 5);
-//        sendBuffer.position(0);
-//        try {
-//            channel.write(sendBuffer);
-//        } catch (IOException ignore) {
-//        }
-//    }
-//
-//    public synchronized void bind(int id) {
-//        if (state != State.CONNECTED || id <= 0)
-//            return;
-//        sendBuffer.limit(9).position(0);
-//        sendBuffer.putInt(9);
-//        sendBuffer.put((byte) 1);
-//        sendBuffer.putInt(id);
-//        sendBuffer.position(0);
-//        try {
-//            channel.write(sendBuffer);
-//        } catch (IOException ignore) {
-//            return;
-//        }
-//
-//        //echo
-//        sendBuffer.limit(BIND_ECHO.length + 5).position(0);
-//        sendBuffer.putInt(BIND_ECHO.length + 5);
-//        sendBuffer.put((byte) 0);
-//        sendBuffer.put(BIND_ECHO);
-//        sendBuffer.position(0);
-//        try {
-//            channel.write(sendBuffer);
-//        } catch (IOException ignore) {
-//        }
-//    }
-//
-//    public int send(int[] ids, byte[] data) {
-//        return send(ids, data, 0, data.length);
-//    }
-//
-//    public synchronized int send(int[] ids, byte[] data, int offset, int length) {
-//        if (state != State.CONNECTED && state != State.BIND)
-//            return -1;
-//        if (ids.length == 1) {
-//            return send(ids[0], data, offset, length);
-//        }
-//        int len = 9 + ids.length * 4 + length;
-//        if (len > sendBuffer.capacity() || data.length < offset + length)
-//            return -1;
-//        sendBuffer.limit(len).position(0);
-//        sendBuffer.putInt(len);
-//        sendBuffer.put((byte) 3);
-//        sendBuffer.putInt(ids.length);
-//        for (int id : ids)
-//            sendBuffer.putInt(id);
-//        sendBuffer.put(data, offset, length);
-//        sendBuffer.position(0);
-//        try {
-//            return channel.write(sendBuffer);
-//        } catch (IOException e) {
-//            return -1;
-//        }
-//    }
-//
-//    public int send(int id, byte[] data) {
-//        return send(id, data, 0, data.length);
-//    }
-//
-//    public synchronized int send(int id, byte[] data, int offset, int length) {
-//        if (state != State.CONNECTED && state != State.BIND)
-//            return -1;
-//        int len = length + 9;
-//        if (len > sendBuffer.capacity() || data.length < offset + length)
-//            return -1;
-//        sendBuffer.limit(len).position(0);
-//        sendBuffer.putInt(len);
-//        sendBuffer.put((byte) 2);
-//        sendBuffer.putInt(id);
-//        sendBuffer.put(data, offset, length);
-//        sendBuffer.position(0);
-//        try {
-//            return channel.write(sendBuffer);
-//        } catch (IOException e) {
-//            return -1;
-//        }
-//    }
-//
-//    @Override
-//    public void run() {
-//        try {
-//            channel = SocketChannel.open();
-//            channel.configureBlocking(true);
-//            channel.connect(new InetSocketAddress(host, port));
-//            int size = getBufferSize();
-//            ByteBuffer buffer = ByteBuffer.allocate(size);
-//            sendBuffer = ByteBuffer.allocate(size);
-//            setState(State.CONNECTED);
-//            for (; ; ) {
-//                buffer.limit(4).position(0);
-//                while (buffer.position() < 4) {
-//                    if (channel.read(buffer) < 0)
-//                        throw new IOException();
-//                }
-//                int len = buffer.getInt(0);
-//                if (len > size) {
-//                    throw new IOException();
-//                }
-//                buffer.limit(len).position(4);
-//                while (buffer.position() < len) {
-//                    if (channel.read(buffer) < 0)
-//                        throw new IOException();
-//                }
-//                buffer.position(4);
-//                byte[] data = new byte[buffer.remaining()];
-//                buffer.get(data);
-//                if (Arrays.equals(BIND_ECHO, data)) {
-//                    setState(State.BIND);
-//                } else {
-//                    callback.onReceiveData(data);
-//                }
-//            }
-//        } catch (IOException e) {
-//            setState(State.ERROR);
-//            try {
-//                channel.close();
-//            } catch (IOException ignore) {
-//            }
-//        }
-//    }
-//
-//    private int getBufferSize() throws IOException {
-//        ByteBuffer buffer = ByteBuffer.allocate(8);
-//        buffer.putInt(5);
-//        buffer.put((byte) 4);
-//        buffer.limit(5).position(0);
-//        channel.write(buffer);
-//        buffer.limit(8).position(0);
-//        while (buffer.position() < 8) {
-//            channel.read(buffer);
-//        }
-//        if (buffer.getInt(0) != 8)
-//            throw new IOException();
-//        return buffer.getInt(4);
-//    }
-//}
+import com.shxhzhxx.sdk.network.PushClient.State.*
+import java.io.IOException
+import java.net.InetSocketAddress
+import java.nio.ByteBuffer
+import java.nio.channels.SocketChannel
+import java.util.*
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.LinkedBlockingQueue
+
+
+class PushClient(
+        private val onReceive: (ByteArray) -> Unit,
+        private val onStateChange: (State) -> Unit
+) {
+    enum class State {
+        INIT, CONNECTING, CONNECTED, BINDING, BOUND, CLOSED;
+    }
+
+    private val channel by lazy { SocketChannel.open().apply { configureBlocking(true) } }
+    private val pushQueue = LinkedBlockingQueue<ByteArray>()
+    private val receiveCallbacks = ConcurrentHashMap<ByteArrayKey, (ByteArray) -> Unit>()
+    var maxBufferSize = 0
+        private set
+    var state = INIT
+        private set(value) {
+            if (field == value) return
+            field = value
+            onStateChange(value)
+            if (value == CLOSED) pushThread.interrupt()
+        }
+    private val pushThread by lazy {
+        Thread {
+            while (state != CLOSED) {
+                val data = try {
+                    pushQueue.take()
+                } catch (e: InterruptedException) {
+                    return@Thread
+                }
+                if (data.size <= maxBufferSize) channel.write(ByteBuffer.wrap(data))
+            }
+        }
+    }
+
+    fun close() {
+        channel.close()
+        state = CLOSED
+    }
+
+    fun bind(id: Int) {
+        if (id <= 0) return
+        synchronized(this) {
+            if (state != CONNECTED && state != CONNECTING) return
+            state = BINDING
+        }
+        val echo1 = UUID.randomUUID().toString().toByteArray()
+        val echo2 = UUID.randomUUID().toString().toByteArray()
+        receiveCallbacks[ByteArrayKey(echo1)] = {
+            if (!(it contentEquals echo2)) throw IOException() //server error
+            state = BOUND
+        }
+        ByteBuffer.allocate(9 + echo1.size + 5 + echo2.size + 5)
+                .putInt(echo1.size + 5).put(0).put(echo1)
+                .putInt(9).put(1).putInt(id)
+                .putInt(echo2.size + 5).put(0).put(echo2)
+                .offer()
+    }
+
+    fun push(id: Int, data: ByteArray, offset: Int = 0, length: Int = data.size) {
+        if (data.size < offset + length) return
+        val len = length + 9
+        ByteBuffer.allocate(len).putInt(len).put(2).putInt(id).put(data, offset, length).offer()
+    }
+
+    fun multiPush(ids: IntArray, data: ByteArray, offset: Int = 0, length: Int = data.size) {
+        if (data.size < offset + length) return
+        if (ids.size == 1) {
+            return push(ids[0], data, offset, length)
+        }
+        val len = 9 + ids.size * 4 + length
+        ByteBuffer.allocate(len).putInt(len).put(3).putInt(ids.size).also { for (id in ids) it.putInt(id) }
+                .put(data, offset, length).offer()
+    }
+
+    fun broadcast(data: ByteArray, offset: Int = 0, length: Int = data.size) {
+        if (data.size < offset + length) return
+        val len = length + 5
+        ByteBuffer.allocate(len).putInt(len).put(6).put(data, offset, length).offer()
+    }
+
+    fun connect(host: String, port: Int) {
+        synchronized(this) {
+            if (state != INIT) return
+            state = CONNECTING
+            pushQueue.clear()
+        }
+        Thread {
+            try {
+                channel.socket().connect(InetSocketAddress(host, port), 3000)
+                maxBufferSize = ByteBuffer.allocate(8).let { byteBuffer ->
+                    byteBuffer.putInt(5).put(4).limit(5).position(0)
+                    channel.write(byteBuffer)
+                    byteBuffer.limit(8).position(0)
+                    while (byteBuffer.position() < 8) {
+                        channel.read(byteBuffer)
+                    }
+                    if (byteBuffer.getInt(0) != 8)
+                        throw IOException()
+                    byteBuffer.getInt(4)
+                }
+                val buffer = ByteBuffer.allocate(maxBufferSize)
+                synchronized(this) {
+                    state = if (state == BINDING) BINDING else CONNECTED
+                    pushThread.start()
+                }
+                var receiver = onReceive
+                while (true) {
+                    buffer.limit(4).position(0)
+                    while (buffer.position() < 4) {
+                        if (channel.read(buffer) < 0) throw IOException()
+                    }
+                    val len = buffer.getInt(0)
+                    if (len > maxBufferSize) throw IOException()
+                    buffer.limit(len).position(4)
+                    while (buffer.position() < len) {
+                        if (channel.read(buffer) < 0) throw IOException()
+                    }
+                    buffer.position(4)
+                    val data = ByteArray(buffer.remaining())
+                    buffer.get(data)
+                    receiver = receiveCallbacks.remove(ByteArrayKey(data)) ?: run { receiver(data);onReceive }
+                }
+            } catch (e: Throwable) {
+                channel.close()
+                state = CLOSED
+            }
+        }.start()
+    }
+
+    private fun ByteBuffer.offer() {
+        pushQueue.offer(ByteArray(limit()).also { position(0);get(it) })
+    }
+}
+
+class ByteArrayKey(private val bytes: ByteArray) {
+    override fun equals(other: Any?): Boolean =
+            this === other || other is ByteArrayKey && this.bytes contentEquals other.bytes
+
+    override fun hashCode(): Int = bytes.contentHashCode()
+}

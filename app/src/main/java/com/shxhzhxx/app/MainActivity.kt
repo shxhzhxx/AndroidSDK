@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.shxhzhxx.sdk.activity.DownloadActivity
+import com.shxhzhxx.sdk.activity.fullscreen
 import com.shxhzhxx.sdk.activity.setStatusBarColor
 import com.shxhzhxx.sdk.net
 import com.shxhzhxx.sdk.network.CODE_NO_AVAILABLE_NETWORK
@@ -15,6 +16,10 @@ import com.shxhzhxx.sdk.network.CODE_TIMEOUT
 import com.shxhzhxx.sdk.ui.ListFragment
 import com.shxhzhxx.sdk.utils.Param
 import kotlinx.coroutines.*
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.Serializer
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonConfiguration
 import kotlin.coroutines.CoroutineContext
 
 
@@ -65,11 +70,13 @@ class MainActivity : DownloadActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        fullscreen()
         Log.d("MainActivity", "onCreate")
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             setStatusBarColor(Color.WHITE)
         }
+        val json = Json(JsonConfiguration.Stable)
 
         object : CoroutineScope {
             override val coroutineContext: CoroutineContext
@@ -77,7 +84,7 @@ class MainActivity : DownloadActivity() {
         }.launch {
             val r: suspend (Int) -> Unit = {
             }
-            val config = net.postCoroutine<Debug3>(debugApi3, lifecycle = lifecycle, retryList = listOf(
+            val config = net.postCoroutine<String>(debugApi3, lifecycle = lifecycle, retryList = listOf(
                     listOf(CODE_NO_AVAILABLE_NETWORK, CODE_TIMEOUT) to { errno -> net.requireNetwork() },
                     listOf(3005) to r
             ))
@@ -85,6 +92,8 @@ class MainActivity : DownloadActivity() {
         }
 
 //        imageLoader.load(iv, "http://p15.qhimg.com/bdm/720_444_0/t01b12dfd7f42342197.jpg", centerCrop = false, roundingRadius = ROUND_CIRCLE)
+
+
     }
 }
 
@@ -94,8 +103,14 @@ class ConfigEx(val hx_contact_group_for_teacher: String) : Config(hx_contact_gro
 open class Config(val serviceIMNumber: String)
 
 data class User(val name: String?, val age: Int?)
+
 data class Debug2(val list: List<User>?)
-data class Debug3(val list: List<User>)
+
+data class Debug3<T>(val list: List<T>)
+
+@Serializable
+data class Debug4<T, V>(val list1: List<T>, val list2: List<V>)
+
 data class Debug(val list: String?)
 data class Student(
         val name: String,
@@ -145,9 +160,9 @@ class MainFragment : ListFragment<Unit, RecyclerView.ViewHolder, MainFragment.Ma
             delay(1000)
             onResult()
             delay(20)
-            if(listSize>30 || true){
+            if (listSize > 30) {
                 mutableListOf<Unit>().also { list -> repeat(7) { list.add(Unit) } }.apply(onLoad)
-            }else{
+            } else {
                 mutableListOf<Unit>().also { list -> repeat(pageSize()) { list.add(Unit) } }.apply(onLoad)
             }
         }
