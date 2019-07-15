@@ -59,6 +59,7 @@ class JsonDeserializeTest {
             assert(str == "str")
             assert(int == 1)
             assert(plus10 == 11)
+            assert(plus20 == 21)
         }
         deserialize(JSONObject()
                 .put("str", "str")
@@ -94,6 +95,7 @@ class JsonDeserializeTest {
 @Serializable
 data class Model(val str: String, val int: Int = 5) {
     val plus10 = int + 10
+    val plus20 get() = int + 20
 }
 
 @Serializable

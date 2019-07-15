@@ -178,15 +178,14 @@ fun InputStream.toFile(dst: File) {
 }
 
 private val threadPoolExecutor by lazy { Executors.newCachedThreadPool() }
-suspend fun <T> convert(onFailure: (() -> Unit)? = null, worker: () -> T) {
+suspend fun <T> convert(onFailure: (() -> Unit)? = null, worker: () -> T): T {
     var future: Future<*>? = null
-    try {
-        suspendCancellableCoroutine<T> {
+    return try {
+        suspendCancellableCoroutine {
             future = threadPoolExecutor.submit {
                 try {
                     it.resume(worker())
                 } catch (e: Throwable) {
-                    e.printStackTrace()
                     it.resumeWithException(CancellationException())
                 }
             }
