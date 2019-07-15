@@ -70,13 +70,12 @@ class MainActivity : DownloadActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        fullscreen()
         Log.d("MainActivity", "onCreate")
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             setStatusBarColor(Color.WHITE)
         }
-        val json = Json(JsonConfiguration.Stable)
+        val json = Json(JsonConfiguration.Stable.copy(strictMode = false))
 
         object : CoroutineScope {
             override val coroutineContext: CoroutineContext
@@ -84,11 +83,14 @@ class MainActivity : DownloadActivity() {
         }.launch {
             val r: suspend (Int) -> Unit = {
             }
-            val config = net.postCoroutine<String>(debugApi3, lifecycle = lifecycle, retryList = listOf(
+            val raw = net.postCoroutine<String>(api, lifecycle = lifecycle, retryList = listOf(
                     listOf(CODE_NO_AVAILABLE_NETWORK, CODE_TIMEOUT) to { errno -> net.requireNetwork() },
                     listOf(3005) to r
             ))
+            Log.d(TAG, "raw:$raw")
+            val config = json.parse(Config.serializer(),raw)
             Log.d(TAG, "config:$config")
+            Log.d(TAG, "test:${config.test}")
         }
 
 //        imageLoader.load(iv, "http://p15.qhimg.com/bdm/720_444_0/t01b12dfd7f42342197.jpg", centerCrop = false, roundingRadius = ROUND_CIRCLE)
@@ -99,8 +101,11 @@ class MainActivity : DownloadActivity() {
 
 
 data class CodeModel(val sisValids: Boolean)
-class ConfigEx(val hx_contact_group_for_teacher: String) : Config(hx_contact_group_for_teacher)
-open class Config(val serviceIMNumber: String)
+
+@Serializable
+data class Config(val serviceIMNumber: String){
+    val test get() = serviceIMNumber.takeLast(10)
+}
 
 data class User(val name: String?, val age: Int?)
 

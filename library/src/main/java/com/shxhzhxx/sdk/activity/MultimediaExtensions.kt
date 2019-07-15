@@ -11,11 +11,15 @@ import android.provider.MediaStore
 import androidx.core.content.FileProvider
 import com.shxhzhxx.sdk.imageLoader
 import com.yalantis.ucrop.UCrop
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import java.io.File
 import java.io.IOException
 import java.io.InputStream
 import java.util.*
+import java.util.concurrent.Executors
+import java.util.concurrent.Future
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
@@ -154,48 +158,42 @@ suspend fun ForResultActivity.cropPictureCoroutine(picture: Uri, aspectX: Float,
             throw e
         }
 
-suspend fun Uri.toFileCoroutine(context: Context, dst: File? = null, onFailure: (() -> Unit)? = null) = convert<File>(onFailure) { isCancelled ->
+suspend fun Uri.toFileCoroutine(context: Context, dst: File? = null, onFailure: (() -> Unit)? = null) = convert<File>(onFailure) {
     (context.contentResolver.openInputStream(this)
             ?: throw IOException()).use { input ->
         (dst ?: File.createTempFile(UUID.randomUUID().toString(), "", context.cacheDir))
-                .also { file -> input.toFile(file, isCancelled) }
+                .also { file -> input.toFile(file) }
     }
 }
 
-fun InputStream.toFile(dst: File, isCancelled: ((onCancel: () -> Unit) -> Boolean)? = null) {
+fun InputStream.toFile(dst: File) {
     dst.outputStream().use { output ->
         val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
         var bytes = read(buffer)
-        while (bytes >= 0 && isCancelled?.invoke {} != true) {
+        while (bytes >= 0) {
             output.write(buffer, 0, bytes)
             bytes = read(buffer)
         }
     }
 }
 
-suspend fun <T> convert(onFailure: (() -> Unit)? = null, dispatcher: CoroutineDispatcher = Dispatchers.IO, worker: (handler: (onCancel: () -> Unit) -> Boolean) -> T) =
-        coroutineScope {
-            var isCancelled = false
-            var action: () -> Unit = {}
-            val handler: (onCancel: () -> Unit) -> Boolean = { onCancel ->
-                action = onCancel
-                isCancelled
-            }
-            try {
-                suspendCancellableCoroutine<T> {
-                    launch(dispatcher) {
-                        try {
-                            it.resume(worker(handler))
-                        } catch (e: Throwable) {
-                            e.printStackTrace()
-                            it.resumeWithException(CancellationException())
-                        }
-                    }
+private val threadPoolExecutor by lazy { Executors.newCachedThreadPool() }
+suspend fun <T> convert(onFailure: (() -> Unit)? = null, worker: () -> T) {
+    var future: Future<*>? = null
+    try {
+        suspendCancellableCoroutine<T> {
+            future = threadPoolExecutor.submit {
+                try {
+                    it.resume(worker())
+                } catch (e: Throwable) {
+                    e.printStackTrace()
+                    it.resumeWithException(CancellationException())
                 }
-            } catch (e: CancellationException) {
-                isCancelled = true
-                action()
-                onFailure?.invoke()
-                throw e
             }
         }
+    } catch (e: CancellationException) {
+        future?.cancel(true)
+        onFailure?.invoke()
+        throw e
+    }
+}

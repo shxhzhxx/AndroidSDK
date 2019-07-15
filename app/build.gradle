@@ -13,6 +13,7 @@ android {
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        multiDexEnabled true
     }
     buildTypes {
         release {
@@ -35,9 +36,10 @@ dependencies {
     implementation 'com.github.shxhzhxx:ImageLoader:2.1.2'
     implementation 'com.github.shxhzhxx:UrlLoader:2.1.7'
     implementation 'com.github.yalantis:ucrop:2.2.2'
-    implementation 'com.fasterxml.jackson.core:jackson-databind:2.9.9'
-    implementation 'com.fasterxml.jackson.module:jackson-module-kotlin:2.9.9'
-    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-json-org:2.9.9'
+    def jackson_version = "2.9.6"
+    implementation "com.fasterxml.jackson.core:jackson-databind:$jackson_version"
+    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jackson_version"
+    implementation "com.fasterxml.jackson.datatype:jackson-datatype-json-org:$jackson_version"
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'androidx.test:runner:1.2.0'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'

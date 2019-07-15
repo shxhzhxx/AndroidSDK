@@ -46,7 +46,7 @@ object MyStringSerializer : KSerializer<String> {
 
 class JsonDeserializeTest {
     private val jsonDeserializer = Json(JsonConfiguration.Stable.copy(strictMode = false), context = serializersModuleOf(String::class, MyStringSerializer))
-    private fun < T> deserialize(json: String, serializer: KSerializer<T>): T {
+    private fun <T> deserialize(json: String, serializer: KSerializer<T>): T {
         return jsonDeserializer.parse(serializer, json)
     }
 
@@ -58,6 +58,7 @@ class JsonDeserializeTest {
                 .toString(), Model.serializer()).apply {
             assert(str == "str")
             assert(int == 1)
+            assert(plus10 == 11)
         }
         deserialize(JSONObject()
                 .put("str", "str")
@@ -91,7 +92,9 @@ class JsonDeserializeTest {
 
 
 @Serializable
-data class Model(val str: String, val int: Int = 5)
+data class Model(val str: String, val int: Int = 5) {
+    val plus10 = int + 10
+}
 
 @Serializable
 data class Wrapper<T, V>(val str: String, val data: T, val list: List<V>)
