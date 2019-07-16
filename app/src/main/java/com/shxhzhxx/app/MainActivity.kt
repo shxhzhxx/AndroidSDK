@@ -7,14 +7,17 @@ import android.util.Log
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
 import com.shxhzhxx.sdk.activity.DownloadActivity
 import com.shxhzhxx.sdk.activity.fullscreen
 import com.shxhzhxx.sdk.activity.setStatusBarColor
+import com.shxhzhxx.sdk.imageLoader
 import com.shxhzhxx.sdk.net
 import com.shxhzhxx.sdk.network.CODE_NO_AVAILABLE_NETWORK
 import com.shxhzhxx.sdk.network.CODE_TIMEOUT
 import com.shxhzhxx.sdk.ui.ListFragment
 import com.shxhzhxx.sdk.utils.Param
+import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.coroutines.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Serializer
@@ -164,7 +167,7 @@ class MainFragment : ListFragment<Unit, RecyclerView.ViewHolder, MainFragment.Ma
         launch {
             delay(1000)
             onResult()
-            delay(20)
+//            delay(20)
             if (listSize > 30) {
                 mutableListOf<Unit>().also { list -> repeat(7) { list.add(Unit) } }.apply(onLoad)
             } else {

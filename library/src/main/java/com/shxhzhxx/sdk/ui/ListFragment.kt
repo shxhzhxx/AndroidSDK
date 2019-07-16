@@ -125,7 +125,8 @@ abstract class ListFragment<M, VH : RecyclerView.ViewHolder, A : RecyclerView.Ad
                     if (refresh) {
                         val size = _list.size
                         _list.clear()
-                        adapter.notifyItemRangeRemoved(0, size)
+                        adapter.notifyDataSetChanged()
+//                        adapter.notifyItemRangeRemoved(0, size)
                     }
                     loading = false
                     swipe?.isEnabled = true
