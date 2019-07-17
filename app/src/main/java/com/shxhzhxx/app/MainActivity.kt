@@ -1,28 +1,22 @@
 package com.shxhzhxx.app
 
+import android.Manifest
 import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.RecyclerView
-import com.bumptech.glide.Glide
 import com.shxhzhxx.sdk.activity.DownloadActivity
-import com.shxhzhxx.sdk.activity.fullscreen
 import com.shxhzhxx.sdk.activity.setStatusBarColor
-import com.shxhzhxx.sdk.imageLoader
 import com.shxhzhxx.sdk.net
 import com.shxhzhxx.sdk.network.CODE_NO_AVAILABLE_NETWORK
 import com.shxhzhxx.sdk.network.CODE_TIMEOUT
 import com.shxhzhxx.sdk.ui.ListFragment
 import com.shxhzhxx.sdk.utils.Param
-import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.coroutines.*
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.Serializer
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonConfiguration
 import kotlin.coroutines.CoroutineContext
 
 
@@ -78,7 +72,6 @@ class MainActivity : DownloadActivity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             setStatusBarColor(Color.WHITE)
         }
-        val json = Json(JsonConfiguration.Stable.copy(strictMode = false))
 
         object : CoroutineScope {
             override val coroutineContext: CoroutineContext
@@ -90,10 +83,6 @@ class MainActivity : DownloadActivity() {
                     listOf(CODE_NO_AVAILABLE_NETWORK, CODE_TIMEOUT) to { errno -> net.requireNetwork() },
                     listOf(3005) to r
             ))
-            Log.d(TAG, "raw:$raw")
-            val config = json.parse(Config.serializer(),raw)
-            Log.d(TAG, "config:$config")
-            Log.d(TAG, "test:${config.test}")
         }
 
 //        imageLoader.load(iv, "http://p15.qhimg.com/bdm/720_444_0/t01b12dfd7f42342197.jpg", centerCrop = false, roundingRadius = ROUND_CIRCLE)
@@ -105,8 +94,7 @@ class MainActivity : DownloadActivity() {
 
 data class CodeModel(val sisValids: Boolean)
 
-@Serializable
-data class Config(val serviceIMNumber: String){
+data class Config(val serviceIMNumber: String) {
     val test get() = serviceIMNumber.takeLast(10)
 }
 
@@ -116,7 +104,6 @@ data class Debug2(val list: List<User>?)
 
 data class Debug3<T>(val list: List<T>)
 
-@Serializable
 data class Debug4<T, V>(val list1: List<T>, val list2: List<V>)
 
 data class Debug(val list: String?)

@@ -35,18 +35,21 @@ abstract class PermissionRequestActivity : CoroutineActivity() {
             if (shouldExplanations.isEmpty() || onShouldExplain == null) {
                 request()
             } else {
+                var invoked = false
                 onShouldExplain(shouldExplanations) { accepted ->
+                    if (invoked) return@onShouldExplain
+                    invoked = true
                     if (accepted) request() else onDeny?.invoke(permissions.filter { checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED })
                 }
             }
         }
     }
 
-    suspend fun requestPermissionsCoroutine(permissions: List<String>, onFailure: (() -> Unit)? = null) {
+    suspend fun requestPermissionsCoroutine(permissions: List<String>, onFailure: (() -> Unit)? = null, onShouldExplain: ((explainPermissions: List<String>, continuation: (accepted: Boolean) -> Unit) -> Unit)? = null) {
         try {
             suspendCancellableCoroutine<Unit> { continuation ->
                 requestPermissions(permissions, { continuation.resume(Unit) }, { continuation.resumeWithException(CancellationException()) },
-                        { continuation.resumeWithException(CancellationException()) })
+                        { continuation.resumeWithException(CancellationException()) },onShouldExplain)
             }
         } catch (e: CancellationException) {
             onFailure?.invoke()
