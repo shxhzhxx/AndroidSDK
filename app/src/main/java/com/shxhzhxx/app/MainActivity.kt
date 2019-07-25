@@ -1,23 +1,22 @@
 package com.shxhzhxx.app
 
-import android.Manifest
 import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import android.view.LayoutInflater
 import android.view.ViewGroup
-import android.widget.TextView
-import androidx.appcompat.app.AlertDialog
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.shxhzhxx.sdk.activity.DownloadActivity
 import com.shxhzhxx.sdk.activity.setStatusBarColor
-import com.shxhzhxx.sdk.net
-import com.shxhzhxx.sdk.network.CODE_NO_AVAILABLE_NETWORK
-import com.shxhzhxx.sdk.network.CODE_TIMEOUT
 import com.shxhzhxx.sdk.ui.ListFragment
 import com.shxhzhxx.sdk.utils.Param
-import kotlinx.coroutines.*
-import kotlin.coroutines.CoroutineContext
+import kotlinx.android.synthetic.main.activity_main.*
+import kotlinx.android.synthetic.main.item_main.view.*
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 
 const val TAG = "MainActivity"
@@ -73,21 +72,29 @@ class MainActivity : DownloadActivity() {
             setStatusBarColor(Color.WHITE)
         }
 
-        object : CoroutineScope {
-            override val coroutineContext: CoroutineContext
-                get() = Dispatchers.Main + SupervisorJob()
-        }.launch {
-            val r: suspend (Int) -> Unit = {
-            }
-            val raw = net.postCoroutine<String>(api, lifecycle = lifecycle, retryList = listOf(
-                    listOf(CODE_NO_AVAILABLE_NETWORK, CODE_TIMEOUT) to { errno -> net.requireNetwork() },
-                    listOf(3005) to r
-            ))
+        val adapter = MyAdapter()
+        list.layoutManager = LinearLayoutManager(this, RecyclerView.VERTICAL, false)
+        list.adapter = adapter
+        swipe.setOnRefreshListener {
+            adapter.notifyDataSetChanged()
+            swipe.isRefreshing = false
         }
+    }
+}
 
-//        imageLoader.load(iv, "http://p15.qhimg.com/bdm/720_444_0/t01b12dfd7f42342197.jpg", centerCrop = false, roundingRadius = ROUND_CIRCLE)
+class MyAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) =
+            object : RecyclerView.ViewHolder(LayoutInflater.from(parent.context).inflate(R.layout.item_main, parent, false)) {}
 
+    override fun getItemCount() = 20
 
+    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+        GlobalScope.launch {
+            delay(2000)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                println("isLaidOut:${holder.itemView.test.isLaidOut}    width:${holder.itemView.test.width}")
+            }
+        }
     }
 }
 
@@ -139,12 +146,19 @@ val invalid = Param("eee", Model("aaa"))
 class MainFragment : ListFragment<Unit, RecyclerView.ViewHolder, MainFragment.MainAdapter>() {
     inner class MainAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) =
-                object : RecyclerView.ViewHolder(TextView(parent.context).also { it.setPadding(200, 200, 200, 200) }) {}
+                object : RecyclerView.ViewHolder(LayoutInflater.from(parent.context).inflate(R.layout.item_main, parent, false)) {}
 
         override fun getItemCount() = listSize
 
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-            (holder.itemView as TextView).text = "item$position"
+//            holder.itemView.title.text = "item$position"
+            GlobalScope.launch {
+                delay(2000)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                    println("isLaidOut:${holder.itemView.test.isLaidOut}")
+                    println("width:${holder.itemView.test.width}")
+                }
+            }
         }
     }
 
@@ -154,7 +168,7 @@ class MainFragment : ListFragment<Unit, RecyclerView.ViewHolder, MainFragment.Ma
         launch {
             delay(1000)
             onResult()
-//            delay(20)
+//            delay(1000)
             if (listSize > 30) {
                 mutableListOf<Unit>().also { list -> repeat(7) { list.add(Unit) } }.apply(onLoad)
             } else {
