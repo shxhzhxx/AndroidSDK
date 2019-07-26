@@ -72,13 +72,6 @@ class MainActivity : DownloadActivity() {
             setStatusBarColor(Color.WHITE)
         }
 
-        val adapter = MyAdapter()
-        list.layoutManager = LinearLayoutManager(this, RecyclerView.VERTICAL, false)
-        list.adapter = adapter
-        swipe.setOnRefreshListener {
-            adapter.notifyDataSetChanged()
-            swipe.isRefreshing = false
-        }
     }
 }
 
