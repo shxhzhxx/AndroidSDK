@@ -43,12 +43,13 @@ abstract class DownloadActivity : ForResultActivity() {
             override fun onReceive(context: Context?, intent: Intent?) {
                 val id = intent?.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1) ?: -1
                 val uri: Uri = downloadManager.getUriForDownloadedFile(id)
-                        ?: run { listeners.remove(id)!!.onFailure?.invoke();return }
-                listeners.remove(id)!!.onLoad?.invoke(uri)
+                        ?: run { listeners.remove(id)?.onFailure?.invoke();return }
+                listeners.remove(id)?.onLoad?.invoke(uri)
             }
         }.also { registerReceiver(it, IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE)) }
 
-        val req = DownloadManager.Request(Uri.parse(url))
+        val req = DownloadManager.Request(Uri.parse(url.filter { it!='\\' }))
+        req.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
         req.setDestinationInExternalFilesDir(this, Environment.DIRECTORY_DOWNLOADS, name)
         val id = downloadManager.enqueue(req)
         listeners[id] = Holder(onLoad, onFailure)

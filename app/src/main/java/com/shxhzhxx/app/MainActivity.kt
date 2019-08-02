@@ -1,15 +1,17 @@
 package com.shxhzhxx.app
 
+import android.Manifest
 import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
+import android.os.FileObserver
 import android.view.LayoutInflater
 import android.view.ViewGroup
-import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.shxhzhxx.sdk.activity.DownloadActivity
 import com.shxhzhxx.sdk.activity.setStatusBarColor
+import com.shxhzhxx.sdk.imageLoader
+import com.shxhzhxx.sdk.net
 import com.shxhzhxx.sdk.ui.ListFragment
 import com.shxhzhxx.sdk.utils.Param
 import kotlinx.android.synthetic.main.activity_main.*
@@ -17,6 +19,7 @@ import kotlinx.android.synthetic.main.item_main.view.*
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import org.json.JSONObject
 
 
 const val TAG = "MainActivity"
@@ -66,12 +69,56 @@ class MainActivity : DownloadActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        Log.d("MainActivity", "onCreate")
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             setStatusBarColor(Color.WHITE)
         }
 
+        val observer = object :FileObserver(cacheDir.absolutePath){
+            override fun onEvent(event: Int, path: String?) {
+                println("onEvent:$event    $path")
+            }
+        }
+        observer.startWatching()
+        val file = createTempFile(directory = cacheDir)
+        val bytes = listOf('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n')
+        launch {
+            val os = file.outputStream()
+            val input = file.inputStream()
+            repeat(5) {
+                os.write(bytes[it * 2].toInt())
+                println("exists:${file.exists()}")
+                println("length:${file.length()}")
+                delay(1000)
+            }
+            println("readBytes   1:${String(input.readBytes())}")
+            input.close()
+            os.close()
+            println("last exists:${file.exists()}")
+        }
+        launch {
+            delay(2000)
+            println("delete:${file.delete()}")
+            delay(500)
+            file.setLastModified(999999)
+            delay(500)
+            println("lastModified:${file.lastModified()}")
+
+        }
+//        launch {
+//            delay(3000)
+//            val os = file.outputStream()
+//            val input = file.inputStream()
+//            repeat(5) {
+//                os.write(bytes[it * 2 + 1].toInt())
+//                println("exists:${file.exists()}")
+//                delay(1000)
+//            }
+//            println("readBytes   2:${String(input.readBytes())}")
+//            input.close()
+//            os.close()
+//            println("last exists:${file.exists()}")
+//        }
     }
 }
 
