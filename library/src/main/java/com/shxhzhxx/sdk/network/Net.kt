@@ -250,7 +250,7 @@ class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: Any?) 
                                                  wrap: Boolean = true, retryList: List<Pair<List<Int>, suspend (Int) -> Unit>> = emptyList(), lifecycle: Lifecycle? = null, postType: PostType = PostType.FORM,
                                                  noinline onResponse: ((msg: String, data: T) -> Unit)? = null,
                                                  noinline onFailure: ((errno: Int, msg: String, data: String?) -> Unit)? = null): T {
-        var maxTimes = 5
+        var maxTimes = 10
         while (true) {
             var id: Int? = null
             try {
@@ -277,7 +277,12 @@ class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: Any?) 
                             coroutineContext.cancel()
                         }
                     })
-                    action(e.errno)
+                    try {
+                        action(e.errno)
+                    } catch (whatever: Throwable) {
+                        onFailure?.invoke(e.errno, e.msg, e.data)
+                        throw e
+                    }
                 }
             }
         }
