@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.shxhzhxx.sdk.activity.DownloadActivity
 import com.shxhzhxx.sdk.activity.setStatusBarColor
+import com.shxhzhxx.sdk.net
 import com.shxhzhxx.sdk.ui.ListFragment
 import com.shxhzhxx.sdk.utils.Param
 import kotlinx.android.synthetic.main.activity_main.*
@@ -71,28 +72,15 @@ class MainActivity : DownloadActivity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             setStatusBarColor(Color.WHITE)
         }
-        val cache = Cache(cacheDir, 100 * 1024 * 1024)
-        val okHttp = OkHttpClient.Builder().readTimeout(5, TimeUnit.SECONDS)
-                .cache(cache)
-                .connectTimeout(5, TimeUnit.SECONDS).build()
-        btn.setOnClickListener {
-            val request = Request.Builder()
-                    .url("https://image.yizhujiao.com/241071863803685805.png")
-                    .build()
-            okHttp.newCall(request).enqueue(object : Callback {
-                override fun onFailure(call: Call, e: IOException) {
-                    println("onFailure")
-                    e.printStackTrace()
-                }
 
-                override fun onResponse(call: Call, response: Response) {
-                    println("onResponse")
-                    println("hitCount:${cache.hitCount()}")
-                    println("networkCount:${cache.networkCount()}")
-                    println("requestCount:${cache.requestCount()}")
-                    response.body()?.string()
-                }
-            })
+        btn.setOnClickListener {
+            launch {
+                net.postCoroutine<Config>(api2,onResponse = {msg, data ->
+                    println("onResponse  $msg   $data")
+                },onFailure = {errno, msg, data ->
+                    println("onFailure   $errno   $msg   $data")
+                })
+            }
         }
     }
 }

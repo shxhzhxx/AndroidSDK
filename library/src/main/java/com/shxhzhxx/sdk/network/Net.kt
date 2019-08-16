@@ -61,16 +61,11 @@ enum class PostType {
 
 private data class Response(
         @JsonAlias("errorCode", "code") val errno: Int,
-        @JsonAlias("tips", "errorMsg", "message") val msg: String
+        @JsonAlias("tips", "errorMsg", "message") val msg: String,
+        @JsonAlias("jsondata") val data: String?
 ) {
     val isSuccessful get() = errno == 0
 }
-
-private data class ResponseWrapper<T>(
-        @JsonAlias("errorCode", "code") val errno: Int,
-        @JsonAlias("tips", "errorMsg", "message") val msg: String,
-        @JsonAlias("jsondata") val data: T
-)
 
 private data class Wrapper<T>(val wrapper: T)
 
@@ -145,7 +140,7 @@ class RequestKey(private val url: String, params: JSONObject?) {
     }
 }
 
-class InternalCancellationException(val errno: Int, val msg: String) : CancellationException()
+class InternalCancellationException(val errno: Int, val msg: String, val data: String?) : CancellationException()
 
 class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: Any?) -> Unit, Unit>() {
     init {
@@ -192,7 +187,7 @@ class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: Any?) 
     var commonParams: (JSONObject) -> JSONObject = { it }
 
     val isNetworkAvailable get() = connMgr.activeNetworkInfo?.isConnected == true
-    val isWifiAvailable get() = isNetworkAvailable && connMgr.activeNetworkInfo.type == ConnectivityManager.TYPE_WIFI
+    val isWifiAvailable get() = isNetworkAvailable && connMgr.activeNetworkInfo?.type == ConnectivityManager.TYPE_WIFI
 
     fun getMsg(errno: Int, defValue: String = defaultErrorMessage) = codeMsg[errno] ?: defValue
 
@@ -217,22 +212,22 @@ class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: Any?) 
 
     inline fun <reified T> inlineRequest(key: Any, request: Request, type: JavaType, wrap: Boolean, lifecycle: Lifecycle? = null,
                                          noinline onResponse: ((msg: String, data: T) -> Unit)? = null,
-                                         noinline onFailure: ((errno: Int, msg: String) -> Unit)? = null) =
+                                         noinline onFailure: ((errno: Int, msg: String, data: String?) -> Unit)? = null) =
             request<T>(key, request, type, wrap, lifecycle) { errno, msg, data ->
                 if (errno == CODE_OK) {
                     if (data is T)
                         onResponse?.invoke(msg, data)
                     else
-                        onFailure?.invoke(CODE_UNEXPECTED_RESPONSE, getMsg(CODE_UNEXPECTED_RESPONSE))
+                        onFailure?.invoke(CODE_UNEXPECTED_RESPONSE, getMsg(CODE_UNEXPECTED_RESPONSE), data as? String)
                 } else {
-                    onFailure?.invoke(errno, msg)
+                    onFailure?.invoke(errno, msg, data as? String)
                 }
             }
 
     inline fun <reified T> post(url: String, params: JSONObject? = null, type: JavaType = TypeFactory.defaultInstance().constructType(T::class.java),
                                 wrap: Boolean = true, lifecycle: Lifecycle? = null, postType: PostType = PostType.FORM,
                                 noinline onResponse: ((msg: String, data: T) -> Unit)? = null,
-                                noinline onFailure: ((errno: Int, msg: String) -> Unit)? = null): Int {
+                                noinline onFailure: ((errno: Int, msg: String, data: String?) -> Unit)? = null): Int {
         val parameters = commonParams(params ?: JSONObject())
         return inlineRequest(RequestKey(url, params), Request.Builder().also { builder ->
             builder.url(url)
@@ -254,27 +249,27 @@ class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: Any?) 
     suspend inline fun <reified T> postCoroutine(url: String, params: JSONObject? = null, type: JavaType = TypeFactory.defaultInstance().constructType(T::class.java),
                                                  wrap: Boolean = true, retryList: List<Pair<List<Int>, suspend (Int) -> Unit>> = emptyList(), lifecycle: Lifecycle? = null, postType: PostType = PostType.FORM,
                                                  noinline onResponse: ((msg: String, data: T) -> Unit)? = null,
-                                                 noinline onFailure: ((errno: Int, msg: String) -> Unit)? = null): T {
+                                                 noinline onFailure: ((errno: Int, msg: String, data: String?) -> Unit)? = null): T {
         var maxTimes = 5
         while (true) {
             var id: Int? = null
             try {
                 return suspendCancellableCoroutine { continuation ->
                     id = post<T>(url, params, type, wrap, lifecycle, postType, onResponse = { msg, data -> id = null;onResponse?.invoke(msg, data);continuation.resume(data) },
-                            onFailure = { errno, msg -> id = null;continuation.resumeWithException(InternalCancellationException(errno, msg)) })
+                            onFailure = { errno, msg, data -> id = null;continuation.resumeWithException(InternalCancellationException(errno, msg, data)) })
                 }
             } catch (e: CancellationException) {
                 id?.let { unregister(it) }
                 if (e !is InternalCancellationException) {
-                    onFailure?.invoke(CODE_CANCELED, getMsg(CODE_CANCELED))
+                    onFailure?.invoke(CODE_CANCELED, getMsg(CODE_CANCELED), null)
                     throw e
                 }
                 if (--maxTimes < 0) {
-                    onFailure?.invoke(e.errno, e.msg)
+                    onFailure?.invoke(e.errno, e.msg, e.data)
                     throw e
                 }
                 val action = retryList.find { e.errno in it.first }?.second
-                        ?: { onFailure?.invoke(e.errno, e.msg);throw e }
+                        ?: { onFailure?.invoke(e.errno, e.msg, e.data);throw e }
                 coroutineScope {
                     lifecycle?.addObserver(object : LifecycleObserver {
                         @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
@@ -291,7 +286,7 @@ class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: Any?) 
     inline fun <reified T> postFile(url: String, type: JavaType = TypeFactory.defaultInstance().constructType(T::class.java),
                                     wrap: Boolean = true, lifecycle: Lifecycle? = null, file: File,
                                     noinline onResponse: ((msg: String, data: T) -> Unit)? = null,
-                                    noinline onFailure: ((errno: Int, msg: String) -> Unit)? = null) =
+                                    noinline onFailure: ((errno: Int, msg: String, data: String?) -> Unit)? = null) =
             inlineRequest(file, Request.Builder().url(url).post(RequestBody.create(DATA_TYPE_FILE, file)).build(), type, wrap, lifecycle, onResponse, onFailure)
 
 
@@ -299,7 +294,7 @@ class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: Any?) 
                                              wrap: Boolean = true, lifecycle: Lifecycle? = null, files: List<Pair<String, File>> = emptyList(),
                                              params: JSONObject? = null,
                                              noinline onResponse: ((msg: String, data: T) -> Unit)? = null,
-                                             noinline onFailure: ((errno: Int, msg: String) -> Unit)? = null): Int {
+                                             noinline onFailure: ((errno: Int, msg: String, data: String?) -> Unit)? = null): Int {
         val builder = MultipartBody.Builder().setType(MultipartBody.FORM)
         for ((name, file) in files) {
             builder.addFormDataPart(name, file.name, RequestBody.create(DATA_TYPE_FILE, file))
@@ -322,7 +317,7 @@ class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: Any?) 
 
         override fun doInBackground() {
             val call = okHttpClient.newCall(request)
-            val (errno: Int, msg: String?, data: T?) = run {
+            val (errno: Int, msg: String?, data: Any?) = run {
                 val raw: String = try {
                     call.execute()
                 } catch (e: IOException) {
@@ -359,10 +354,9 @@ class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: Any?) 
                     return@run (if (wrap) {
                         val response = mapper.readValue<Response>(raw)
                         if (!response.isSuccessful) {
-                            Triple(response.errno, response.msg, null)
+                            Triple(response.errno, response.msg, response.data)
                         } else {
-                            Triple(response.errno, response.msg, mapper.readValue<ResponseWrapper<T>>(raw,
-                                    TypeFactory.defaultInstance().constructParametricType(ResponseWrapper::class.java, type)).data)
+                            Triple(response.errno, response.msg, mapper.readValue<T>(response.data, type))
                         }
                     } else Triple(CODE_OK, null, resolve(raw))).also {
                         if (debugMode) {
