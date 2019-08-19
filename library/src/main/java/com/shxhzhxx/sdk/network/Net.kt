@@ -247,7 +247,7 @@ class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: Any?) 
     }
 
     suspend inline fun <reified T> postCoroutine(url: String, params: JSONObject? = null, type: JavaType = TypeFactory.defaultInstance().constructType(T::class.java),
-                                                 wrap: Boolean = true, retryList: List<Pair<List<Int>, suspend (Int) -> Unit>> = emptyList(), lifecycle: Lifecycle? = null, postType: PostType = PostType.FORM,
+                                                 wrap: Boolean = true, retryList: List<Pair<List<Int>, suspend (Int, String, String?) -> Unit>> = emptyList(), lifecycle: Lifecycle? = null, postType: PostType = PostType.FORM,
                                                  noinline onResponse: ((msg: String, data: T) -> Unit)? = null,
                                                  noinline onFailure: ((errno: Int, msg: String, data: String?) -> Unit)? = null): T {
         var maxTimes = 10
@@ -269,7 +269,7 @@ class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: Any?) 
                     throw e
                 }
                 val action = retryList.find { e.errno in it.first }?.second
-                        ?: { onFailure?.invoke(e.errno, e.msg, e.data);throw e }
+                        ?: { errno, msg, data -> onFailure?.invoke(errno, msg, data);throw e }
                 coroutineScope {
                     lifecycle?.addObserver(object : LifecycleObserver {
                         @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
@@ -278,7 +278,7 @@ class Net(context: Context) : TaskManager<(errno: Int, msg: String, data: Any?) 
                         }
                     })
                     try {
-                        action(e.errno)
+                        action(e.errno, e.msg, e.data)
                     } catch (whatever: Throwable) {
                         onFailure?.invoke(e.errno, e.msg, e.data)
                         throw e
