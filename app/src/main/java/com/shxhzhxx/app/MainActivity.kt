@@ -16,9 +16,6 @@ import kotlinx.android.synthetic.main.item_main.view.*
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import okhttp3.*
-import java.io.IOException
-import java.util.concurrent.TimeUnit
 
 
 const val TAG = "MainActivity"
@@ -75,9 +72,9 @@ class MainActivity : DownloadActivity() {
 
         btn.setOnClickListener {
             launch {
-                net.postCoroutine<Config>(api2,onResponse = {msg, data ->
+                net.postCoroutine<Config>(api2, onResponse = { msg, data ->
                     println("onResponse  $msg   $data")
-                },onFailure = {errno, msg, data ->
+                }, onFailure = { errno, msg, data ->
                     println("onFailure   $errno   $msg   $data")
                 })
             }
