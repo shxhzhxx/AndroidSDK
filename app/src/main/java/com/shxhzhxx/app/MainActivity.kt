@@ -6,8 +6,8 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
-import com.shxhzhxx.sdk.activity.DownloadActivity
 import com.shxhzhxx.sdk.activity.setStatusBarColor
+import com.shxhzhxx.sdk.imageLoader
 import com.shxhzhxx.sdk.net
 import com.shxhzhxx.sdk.ui.ListFragment
 import com.shxhzhxx.sdk.utils.Param
@@ -60,7 +60,7 @@ const val float = "https://static.usasishu.com/float.txt"
 const val float2 = "https://static.usasishu.com/float2.txt"
 const val debugCodeApi = "https://static.usasishu.com/debugCodeApi6.txt"
 
-class MainActivity : DownloadActivity() {
+class MainActivity : BaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
